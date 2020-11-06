@@ -77,7 +77,7 @@ def convert_fen_string(fen):
     fullmove_number = int(split_fen[5])
     
     
-    # Dimensions: 8x8x12 / 2 / 4 / 8x8 / 1 / 1
+    # Dimensions: 12x8x8 / 2 / 4 / 8x8 / 1 / 1
     # Values: bit / bit / bit / bit / int bounded by 100 / int
     return positions, next_to_play, castling, en_passant, halfmove_clock, fullmove_number
         
