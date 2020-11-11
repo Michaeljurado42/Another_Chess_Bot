@@ -32,8 +32,10 @@ def play_local_game(white_player, black_player, player_names):
     output.write("Starting Game between {}-WHITE and {}-BLACK\n".format(player_names[0], player_names[1]))
     output_true.write("Starting Game between {}-WHITE and {}-BLACK\n".format(player_names[0], player_names[1]))
 
-    white_player.handle_game_start(chess.WHITE, chess.Board())
-    black_player.handle_game_start(chess.BLACK, chess.Board())
+    # whom: Modified to pass in truth_board.  This won't be available when we turn in the assignment
+    white_player.handle_game_start(chess.WHITE, game.truth_board)
+    black_player.handle_game_start(chess.BLACK, game.truth_board)
+
     game.start()
 
     move_number = 1
