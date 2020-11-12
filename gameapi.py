@@ -33,11 +33,11 @@ class GameAPI():
 
     def getCanonicalBoardSize(self):
         """ Return the dimensions which will be input to the neural network (channels, board_x, board_y) """
-        return (20, 8, 8)
+        return hyperparams.input_dims
 
     def getActionSize(self):
         """ Return action size """
-        return 4673  # 8*8*73 + 1
+        return hyperparams.action_size
 
     def getGameEnded(self):
         """ Game is ended when one of the kings are missing """
