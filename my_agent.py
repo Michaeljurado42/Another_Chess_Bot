@@ -12,13 +12,22 @@ Source:         Adapted from recon-chess (https://pypi.org/project/reconchess/)
 import random
 import chess
 from player import Player
-
+from mcts import MCTS
+from rbmcnet import RbmcNet
+import torch
 
 # TODO: Rename this class to what you would like your bot to be named during the game.
 class MyAgent(Player):
 
     def __init__(self):
-        pass
+
+        self.color = None
+        self.board = None
+
+        self.load_weights = False
+        self.training_enabled = True
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
         
     def handle_game_start(self, color, board):
         """
@@ -29,8 +38,19 @@ class MyAgent(Player):
         :return:
         """
         # TODO: implement this method
-        pass
+        self.board = board
+        self.color = color
+        self.t = 0
+        self.history = []
         
+        if self.load_weights == False:
+            self.nnet = RbmcNet()
+            self.nnet.to(self.device)
+        else:
+            # Load in neural network weights
+            pass
+
+       
     def handle_opponent_move_result(self, captured_piece, captured_square):
         """
         This function is called at the start of your turn and gives you the chance to update your board.
@@ -86,6 +106,28 @@ class MyAgent(Player):
         :example: choice = chess.Move(chess.G7, chess.G8, promotion=chess.KNIGHT) *default is Queen
         """
         # TODO: update this method
+
+        self.move_count += 1
+        # whom: Run MCTS simulation for num_simulations and then choose the best move
+        # Provide current_board (or what we believe to be the current board) to MCTS
+        # During training self.board has been modified to be the truth board
+        current_board = self.board
+
+        game = GameAPIs()
+        mcts = MCTS(game, self.nnet, args={'numMCTSSims': 1000, 'cpuct': 1.0})
+
+        probs = mcts.getActionProb(self.board, temp = self.move_count < 30)
+        best_move = np.argmax(probs)
+
+        # convert best_move to Move object
+        choice = game.to_move(best_move)
+
+        # Store these probabilities for the current time step
+        # We should also store who is the predicted winner
+        self.history.append(probs)
+
+    
+
         choice = random.choice(possible_moves)
         return choice
         
@@ -112,3 +154,30 @@ class MyAgent(Player):
         """
         # TODO: implement this method
         pass
+
+def format_print_board(board):
+    rows = ['8', '7', '6', '5', '4', '3', '2', '1']
+    fen = board.board_fen()
+
+    fb = "   A   B   C   D   E   F   G   H  "
+    fb += rows[0]
+    ind = 1
+    for f in fen:
+        if f == '/':
+            fb += '|' + rows[ind]
+            ind += 1
+        elif f.isnumeric():
+            for i in range(int(f)):
+                fb += '|   '
+        else:
+            fb += '| ' + f + ' '
+    fb += '|'
+
+    ind = 0
+    for i in range(9):
+        for j in range(34):
+            print(fb[ind], end='')
+            ind += 1
+        print('\n', end='')
+    print("")
+
