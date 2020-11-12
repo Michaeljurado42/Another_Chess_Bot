@@ -13,11 +13,13 @@ import random
 import chess
 from player import Player
 from mcts import MCTS
-from rbmcnet import RbmcNet
+from rbmcnet import RbmcNet, NNetWrapper
+from gameapi import GameAPI
 import torch
 
+
 # TODO: Rename this class to what you would like your bot to be named during the game.
-class MyAgent(Player):
+class AnotherChessBot(Player):
 
     def __init__(self):
 
@@ -26,7 +28,6 @@ class MyAgent(Player):
 
         self.load_weights = False
         self.training_enabled = True
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         
     def handle_game_start(self, color, board):
@@ -40,13 +41,11 @@ class MyAgent(Player):
         # TODO: implement this method
         self.board = board
         self.color = color
-        self.t = 0
+        self.move_count = 0
         self.history = []
         
+        self.nnet = NNetWrapper()
         if self.load_weights == False:
-            self.nnet = RbmcNet()
-            self.nnet.to(self.device)
-        else:
             # Load in neural network weights
             pass
 
@@ -113,10 +112,10 @@ class MyAgent(Player):
         # During training self.board has been modified to be the truth board
         current_board = self.board
 
-        game = GameAPIs()
-        mcts = MCTS(game, self.nnet, args={'numMCTSSims': 1000, 'cpuct': 1.0})
+        game = GameAPI(current_board)
+        mcts = MCTS(game, self.nnet, num_mcts_sims=1000, cpuct=1.0)
 
-        probs = mcts.getActionProb(self.board, temp = self.move_count < 30)
+        probs = mcts.getActionProb(temp = self.move_count < 30)
         best_move = np.argmax(probs)
 
         # convert best_move to Move object

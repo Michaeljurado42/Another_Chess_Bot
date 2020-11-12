@@ -4,7 +4,9 @@ import torch
 import torchvision 
 import torch.nn as nn
 import torch.nn.functional as F
-
+import hyperparams
+import time
+import numpy as np
 
 class ConvBlock(nn.Module):
     # Channels
@@ -16,13 +18,15 @@ class ConvBlock(nn.Module):
     #---------------
     #             17
 
-    def __init__(self):
+    def __init__(self, in_dims):
         super(ConvBlock, self).__init__()
-        self.conv1 = nn.Conv2d(17, 128, 3, stride=1, padding=1)
+        self.channels, self.board_x, self.board_y = in_dims
+
+        self.conv1 = nn.Conv2d(self.channels, 128, 3, stride=1, padding=1)
         self.bn1 = nn.BatchNorm2d(128)
 
     def forward(self, s):
-        s = s.view(-1, 17, 8, 8)  # batch_size x channels x board_x x board_y
+        s = s.view(-1, self.channels, self.board_x, self.board_y)  # batch_size x channels x board_x x board_y
         s = F.relu(self.bn1(self.conv1(s)))
         return s
 
@@ -61,9 +65,10 @@ class OutBlock(nn.Module):
    #
    # |Location| * |action| = 8*8*73 = 4672
 
-    def __init__(self):
+    def __init__(self, input_dims, action_size):
         super(OutBlock, self).__init__()
-        self.actions = 4672
+        self.actions = action_size
+        self.channels, self.board_x, self.board_y = input_dims
 
         self.conv = nn.Conv2d(128, 3, kernel_size=1) # value head
         self.bn = nn.BatchNorm2d(3)
@@ -106,12 +111,14 @@ class RbmcNet(nn.Module):
     # A policy head, which is a vector of 8*8*73 = 4672 probabilities indicating where the piece
     # we are to move is located and what action to take.
 
-    def __init__(self):
+    def __init__(self, input_dims, action_size):
         super(RbmcNet, self).__init__()
-        self.conv = ConvBlock()
+        self.input_dims = input_dims
+        self.conv = ConvBlock(input_dims)
+
         for block in range(19):
             setattr(self, "res_%i" % block,ResBlock())
-        self.outblock = OutBlock()
+        self.outblock = OutBlock(input_dims, action_size)
     
     def forward(self,s):
         s = self.conv(s)
@@ -121,3 +128,106 @@ class RbmcNet(nn.Module):
         return s
 
 
+# Neural network wrapper utilities from
+# https://github.com/suragnair/alpha-zero-general
+
+class NNetWrapper():
+    def __init__(self):
+        self.cuda = hyperparams.use_gpu and torch.cuda.is_available()
+        self.batch_size = hyperparams.batch_size
+        self.epochs = hyperparams.epochs
+        self.channels, self.board_x, self.board_y = hyperparams.input_dims
+        self.action_size = hyperparams.action_size
+        self.nnet = RbmcNet(hyperparams.input_dims, hyperparams.action_size)
+
+        if self.cuda:
+            self.nnet.cuda()
+
+    def train(self, examples):
+        """
+        examples: list of examples, each example is of form (board, pi, v)
+        """
+        optimizer = optim.Adam(self.nnet.parameters())
+
+        for epoch in range(self.epochs):
+            print('EPOCH ::: ' + str(epoch + 1))
+            self.nnet.train()
+            pi_losses = AverageMeter()
+            v_losses = AverageMeter()
+
+            batch_count = int(len(examples) / self.batch_size)
+
+            t = tqdm(range(batch_count), desc='Training Net')
+            for _ in t:
+                sample_ids = np.random.randint(len(examples), size=self.batch_size)
+                boards, pis, vs = list(zip(*[examples[i] for i in sample_ids]))
+                boards = torch.FloatTensor(np.array(boards).astype(np.float64))
+                target_pis = torch.FloatTensor(np.array(pis))
+                target_vs = torch.FloatTensor(np.array(vs).astype(np.float64))
+
+                # predict
+                if self.cuda:
+                    boards, target_pis, target_vs = boards.contiguous().cuda(), target_pis.contiguous().cuda(), target_vs.contiguous().cuda()
+
+                # compute output
+                out_pi, out_v = self.nnet(boards)
+                l_pi = self.loss_pi(target_pis, out_pi)
+                l_v = self.loss_v(target_vs, out_v)
+                total_loss = l_pi + l_v
+
+                # record loss
+                pi_losses.update(l_pi.item(), boards.size(0))
+                v_losses.update(l_v.item(), boards.size(0))
+                t.set_postfix(Loss_pi=pi_losses, Loss_v=v_losses)
+
+                # compute gradient and do SGD step
+                optimizer.zero_grad()
+                total_loss.backward()
+                optimizer.step()
+
+    def predict(self, board):
+        """
+        board: np array with board
+        """
+        # timing
+        start = time.time()
+
+        # preparing input
+        board = torch.FloatTensor(board.astype(np.float64))
+        if self.cuda: board = board.contiguous().cuda()
+
+        # whom: what is this line for?  
+        #board = board.view(1, self.board_x, self.board_y)
+
+        self.nnet.eval()
+        with torch.no_grad():
+            pi, v = self.nnet(board)
+
+        # print('PREDICTION TIME TAKEN : {0:03f}'.format(time.time()-start))
+        return torch.exp(pi).data.cpu().numpy()[0], v.data.cpu().numpy()[0]
+
+    def loss_pi(self, targets, outputs):
+        return -torch.sum(targets * outputs) / targets.size()[0]
+
+    def loss_v(self, targets, outputs):
+        return torch.sum((targets - outputs.view(-1)) ** 2) / targets.size()[0]
+
+    def save_checkpoint(self, folder='checkpoint', filename='checkpoint.pth.tar'):
+        filepath = os.path.join(folder, filename)
+        if not os.path.exists(folder):
+            print("Checkpoint Directory does not exist! Making directory {}".format(folder))
+            os.mkdir(folder)
+        else:
+            print("Checkpoint Directory exists! ")
+        torch.save({
+            'state_dict': self.nnet.state_dict(),
+        }, filepath)
+
+    def load_checkpoint(self, folder='checkpoint', filename='checkpoint.pth.tar'):
+        # https://github.com/pytorch/examples/blob/master/imagenet/main.py#L98
+        filepath = os.path.join(folder, filename)
+        if not os.path.exists(filepath):
+            raise ("No model in path {}".format(filepath))
+        map_location = None if self.cuda else 'cpu'
+        checkpoint = torch.load(filepath, map_location=map_location)
+        self.nnet.load_state_dict(checkpoint['state_dict'])

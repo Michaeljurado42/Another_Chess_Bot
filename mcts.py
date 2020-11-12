@@ -1,20 +1,23 @@
 #!/usr/bin/env python
-
+#
+# Code originally comes from github: https://github.com/suragnair/alpha-zero-general
+# The code has been modified to work on chess games for our RBMC project
+#
 import math
 
 import numpy as np
 
 EPS = 1e-8
-
 class MCTS():
     """
     This class handles the MCTS tree.
     """
 
-    def __init__(self, game, nnet, args):
+    def __init__(self, game, nnet, num_mcts_sims, cpuct):
         self.game = game
         self.nnet = nnet
-        self.args = args
+        self.num_mcts_sims = num_mcts_sims
+        self.cpuct = cpuct
         self.Qsa = {}  # stores Q values for s,a (as defined in the paper)
         self.Nsa = {}  # stores #times edge s,a was visited
         self.Ns = {}  # stores #times board s was visited
@@ -23,7 +26,7 @@ class MCTS():
         self.Es = {}  # stores game.getGameEnded ended for board s
         self.Vs = {}  # stores game.getValidMoves for board s
 
-    def getActionProb(self, canonicalBoard, temp=1):
+    def getActionProb(self, temp=1):
         """
         This function performs numMCTSSims simulations of MCTS starting from
         canonicalBoard.
@@ -31,8 +34,9 @@ class MCTS():
             probs: a policy vector where the probability of the ith action is
                    proportional to Nsa[(s,a)]**(1./temp)
         """
-        for i in range(self.args.numMCTSSims):
-            self.search(canonicalBoard)
+        for i in range(self.num_mcts_sims):
+            self.game.restore_board()
+            self.search()
 
         s = self.game.stringRepresentation(canonicalBoard)
         counts = [self.Nsa[(s, a)] if (s, a) in self.Nsa else 0 for a in range(self.game.getActionSize())]
@@ -49,7 +53,7 @@ class MCTS():
         probs = [x / counts_sum for x in counts]
         return probs
 
-    def search(self, canonicalBoard):
+    def search(self):
         """
         This function performs one iteration of MCTS. It is recursively called
         till a leaf node is found. The action chosen at each node is one that
@@ -66,18 +70,18 @@ class MCTS():
             v: the negative of the value of the current canonicalBoard
         """
 
-        s = self.game.stringRepresentation(canonicalBoard)
+        s = self.game.stringRepresentation()
 
         if s not in self.Es:
-            self.Es[s] = self.game.getGameEnded(canonicalBoard, 1)
+            self.Es[s] = self.game.getGameEnded()
         if self.Es[s] != 0:
             # terminal node
             return -self.Es[s]
 
         if s not in self.Ps:
             # leaf node
-            self.Ps[s], v = self.nnet.predict(canonicalBoard)
-            valids = self.game.getValidMoves(canonicalBoard, 1)
+            self.Ps[s], v = self.nnet.predict(self.game.getCanonicalBoard())
+            valids = self.game.getValidMoves()
             self.Ps[s] = self.Ps[s] * valids  # masking invalid moves
             sum_Ps_s = np.sum(self.Ps[s])
             if sum_Ps_s > 0:
@@ -103,20 +107,19 @@ class MCTS():
         for a in range(self.game.getActionSize()):
             if valids[a]:
                 if (s, a) in self.Qsa:
-                    u = self.Qsa[(s, a)] + self.args.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (
+                    u = self.Qsa[(s, a)] + self.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (
                             1 + self.Nsa[(s, a)])
                 else:
-                    u = self.args.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
+                    u = self.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
 
                 if u > cur_best:
                     cur_best = u
                     best_act = a
 
         a = best_act
-        next_s, next_player = self.game.getNextState(canonicalBoard, 1, a)
-        next_s = self.game.getCanonicalForm(next_s, next_player)
+        self.game.make_move(a)
 
-        v = self.search(next_s)
+        v = self.search()
 
         if (s, a) in self.Qsa:
             self.Qsa[(s, a)] = (self.Nsa[(s, a)] * self.Qsa[(s, a)] + v) / (self.Nsa[(s, a)] + 1)
