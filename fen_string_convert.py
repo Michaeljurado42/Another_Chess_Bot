@@ -85,7 +85,7 @@ def convert_fen_string(fen):
 
 def process_sense(sense_result):
     """
-    Returns the sense result as a one hot encoding in the same format os the state
+    Returns the sense result as a one hot encoding in the same format as the state
     :param sense_result:
     :return:
     """
