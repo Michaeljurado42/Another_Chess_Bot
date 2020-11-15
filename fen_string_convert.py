@@ -83,20 +83,60 @@ def convert_fen_string(fen):
 # print(convert_fen_string("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"))
 
 
-def process_sense(sense_result):
+def create_blank_emission_matrix(white=True):
     """
-    Returns the sense result as a one hot encoding in the same format os the state
-    :param sense_result:
-    :return:
+    Purpose of this is to create a blank emission matrix. Only information that it stores is the side of the board
+
+    Current emission Encodding:
+    Channels 1-12: stores result of sensing. emission_matrix[0, 2, 2] means there is a rook at (2, 2)
+
+    Channel 13: emission_matrix[12, 1, 1] == 1 means that the opponent took a piece at this location
+
+    Channel 14: move requested from
+    Channel 15: move requested to
+
+    Channel 16: move actually taken from
+    Channel 17: move actually take to
+
+    Channel 18: if emission_matrix[17, 2, 2] == 1, it means the opponent took a piece at 2, 2
+
+    Channel 19: black or white.
+
+
+    :param white: are you white?
+    :return: emission board with just white information written to it
     """
-    output = np.zeros((20, 8, 8))
+    emission_matrix = np.zeros((19, 8, 8))
+    emission_matrix[-1, :, :] = int(white)
+    return emission_matrix
+
+
+def get_row_col_from_num(loc):
+    """
+
+    :param loc: board position as number
+    :return: row, col of board
+    """
+    col = (loc - 1) % 8
+    row = loc // 8
+    return row, col
+
+
+def process_sense(sense_result, emission_matrix=np.zeros((18, 8, 8))):
+    """
+    Result of sensing
+
+    Note: if you supply an emission matrix it is an in place operation
+    :param sense_result: List of sense results
+    :param emission_matrix: current emission matrix
+    :return: modified emission matrix
+    """
     for loc, piece in sense_result:
         if piece is not None:  # love how python is like english lol
-            col = (loc - 1) % 8
-            row = loc // 8
+            row, col = get_row_col_from_num(loc)
 
             piece_pos = position_converter[str(piece)]
 
-            output[piece_pos, row, col] = 1
+            emission_matrix[piece_pos, row, col] = 1
 
-    return output
+    return emission_matrix

@@ -13,12 +13,12 @@ import random
 import chess
 from player import Player
 
-from fen_string_convert import process_sense, convert_fen_string
+from fen_string_convert import process_sense, convert_fen_string, get_row_col_from_num, create_blank_emission_matrix
 
-
+import numpy as np
 class Random(Player):
 
-    def handle_game_start(self, color, board):
+    def handle_game_start(self, color, board, white):
         """
         This function is called at the start of the game.
 
@@ -28,7 +28,8 @@ class Random(Player):
         self.board = board
         self.sense_list = []
         self.truth_board_list = []
-        pass
+        self.white = white
+        self.emission_matrix = create_blank_emission_matrix(self.white)
 
     def handle_opponent_move_result(self, captured_piece, captured_square):
         """
@@ -37,7 +38,13 @@ class Random(Player):
         :param captured_piece: bool - true if your opponents captured your piece with their last move
         :param captured_square: chess.Square - position where your piece was captured
         """
-        pass
+
+        if captured_piece:
+            row, col = get_row_col_from_num(captured_square)
+            self.emission_matrix[12, row, col] = 1
+
+        self.sense_list.append(self.emission_matrix)  # could contain no updates
+        self.truth_board_list.append(convert_fen_string(self.board.fen()))
 
     def choose_sense(self, possible_sense, possible_moves, seconds_left):
         """
@@ -51,6 +58,11 @@ class Random(Player):
         :example: choice = chess.A1
         """
 
+        # use emsission matrix here for inference
+        # TODO
+
+        # neural network stuff
+        self.emission_matrix = create_blank_emission_matrix(self.white)  # only clear when you have used the matrix as input to RNN
         return random.choice(possible_sense)
 
     def handle_sense_result(self, sense_result):
@@ -67,9 +79,10 @@ class Random(Player):
             (A6, None), (B6, None), (C8, None)
         ]
         """
+        process_sense(sense_result, self.emission_matrix)  # adds sensing information to emission matrix
 
-        # collect our dataset
-        self.sense_list.append(process_sense(sense_result))
+        # collect our dadaist
+        self.sense_list.append(self.emission_matrix)
         self.truth_board_list.append(convert_fen_string(self.board.fen()))
         pass
 
@@ -86,6 +99,14 @@ class Random(Player):
         :condition: If you intend to move a pawn for promotion other than Queen, please specify the promotion parameter
         :example: choice = chess.Move(chess.G7, chess.G8, promotion=chess.KNIGHT) *default is Queen
         """
+
+        # Use rnn to figure out state
+
+        # use mcts and policy network
+
+
+        self.emission_matrix = create_blank_emission_matrix(self.white)  # clear it here
+
         return random.choice(possible_moves)
 
     def handle_move_result(self, requested_move, taken_move, reason, captured_piece, captured_square):
@@ -99,7 +120,27 @@ class Random(Player):
         :param captured_piece: bool -- true if you captured your opponents piece
         :param captured_square: chess.Square -- position where you captured the piece
         """
-        pass
+
+        if requested_move != None:
+            from_row, from_col = get_row_col_from_num(requested_move.from_square)
+            self.emission_matrix[13, from_row, from_col] = 1
+
+            to_row, to_col = get_row_col_from_num(requested_move.to_square)
+            self.emission_matrix[14, from_row, from_col] = 1
+
+        if taken_move != None:  # what was the move you actually took
+            from_row, from_col = get_row_col_from_num(taken_move.from_square)
+            self.emission_matrix[15, from_row, from_col] = 1
+
+            to_row, to_col = get_row_col_from_num(taken_move.to_square)
+            self.emission_matrix[16, from_row, from_col] = 1
+
+        if captured_piece:  # did you capture a piece
+            self.emission_matrix[17,:, :] = 1
+
+        # self.sense_list.append(self.emission_matrix)  # could contain no updates
+        # self.truth_board_list.append(convert_fen_string(self.board.fen()))
+
 
     def handle_game_end(self, winner_color, win_reason):  # possible GameHistory object...
         """

@@ -18,6 +18,7 @@ from datetime import datetime
 import time
 import pickle
 
+
 def play_local_game(white_player, black_player, player_names):
     players = [black_player, white_player]
 
@@ -33,8 +34,8 @@ def play_local_game(white_player, black_player, player_names):
     output_true.write("Starting Game between {}-WHITE and {}-BLACK\n".format(player_names[0], player_names[1]))
 
     # whom: Modified to pass in truth_board.  This won't be available when we turn in the assignment
-    white_player.handle_game_start(chess.WHITE, game.truth_board)
-    black_player.handle_game_start(chess.BLACK, game.truth_board)
+    white_player.handle_game_start(chess.WHITE, game.truth_board, white=True)
+    black_player.handle_game_start(chess.BLACK, game.truth_board, white = False)
 
     game.start()
 
@@ -106,8 +107,11 @@ def play_turn(game, player, turn, move_number, output, output_true):
     player.handle_move_result(requested_move, taken_move, reason, captured_square is not None,
                               captured_square)
 
-    output.write("##################################--Move requested: {} -- Move taken: {}\n".format(requested_move, taken_move))
-    output_true.write("##################################--Move requested: {} -- Move taken: {}\n\n".format(requested_move, taken_move))
+    output.write(
+        "##################################--Move requested: {} -- Move taken: {}\n".format(requested_move, taken_move))
+    output_true.write(
+        "##################################--Move requested: {} -- Move taken: {}\n\n".format(requested_move,
+                                                                                              taken_move))
     if turn:
         format_write_board(output, game.white_board)
     else:
@@ -218,9 +222,12 @@ if __name__ == '__main__':
 
     """Saving Data from game"""
     x = open("white_game_obs.pkl", "wb")
+    y = open("black_game_obs.pkl", "wb")
 
     pickle.dump((player_one.sense_list, player_one.truth_board_list), x)
+    pickle.dump((player_two.sense_list, player_two.truth_board_list), x)
     x.close()
+    y.close()
     print('Game Over!')
     if win_color is not None:
         print(win_reason)

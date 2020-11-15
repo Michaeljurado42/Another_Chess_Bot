@@ -8,7 +8,7 @@ class BoardGuesserNet(nn.Module):
         super(BoardGuesserNet, self).__init__()
 
         """This could be a small backbone"""
-        self.conv1 = torch.nn.Conv2d(20, 32, 3)
+        self.conv1 = torch.nn.Conv2d(19, 32, 3)
         self.relu1 = torch.nn.ReLU()
         self.pool1 = torch.nn.MaxPool2d(2)
 
@@ -17,13 +17,10 @@ class BoardGuesserNet(nn.Module):
         self.pool2 = torch.nn.MaxPool2d(2)
 
         self.flatten = torch.nn.Flatten()
-
+        # two hidden lstm states
         self.lstm = torch.nn.LSTM(256, 256, 2, batch_first=True)
 
-        # self.dense
-        # self.conv_transpose_1 = torch.nn.ConvTranspose2d(1, 3, 3)
-        # self.relu3 = torch.nn.ReLU()
-        """maybe this could be where the network splits"""
+        # recast board to truth
         self.dense1 = torch.nn.Linear(256, 640)
         self.relu3 = torch.nn.ReLU()
 
@@ -48,21 +45,19 @@ class BoardGuesserNet(nn.Module):
         h_0, c_0 = self.lstm(flatten_out_batch_size_1) # discard c_0 but we will definitely need it when we deploy the model
         remove_batch_dimension = h_0.unsqueeze(0)
 
-        # conv_transpose1_out = self.conv_transpose_1(square_lstm_out)
-        # relu_3 = self.relu3(conv_transpose1_out)
         dense1_out = self.dense1(flatten_out)
         relu_3 = self.relu3(dense1_out)
 
         dense2_out = self.dense2(relu_3)
 
-        return self.sigmoid1(dense2_out.reshape(state.shape))
+        return self.sigmoid1(dense2_out.reshape((state.shape[0], 20, 8, 8)))
 
 
 if __name__ == "__main__":
-    network_input = torch.zeros((50, 20, 8, 8))  # set of 50 observations
+    network_input = torch.zeros((50, 19, 8, 8))  # set of 50 observations
 
     guessNet = BoardGuesserNet()
-    network_input = torch.zeros((50, 20, 8, 8))
+    network_input = torch.zeros((50, 19, 8, 8))
     network_guess = guessNet(network_input)
 
 
