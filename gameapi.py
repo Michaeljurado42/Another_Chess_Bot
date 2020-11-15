@@ -141,7 +141,7 @@ class GameAPI():
 
     def make_move(self, action):
         """ Make the move """
-        # TO-DO: implement normal promotion from a paw to a queen. Currently only underpromotions are supported.
+        # TO-DO: implement normal promotion from a pawn to a queen. Currently only underpromotions are supported.
         # action is a 1-hot encoded vector of size 4673.  Convert it to
         # a chess.Move object
         index = action.index(action)
