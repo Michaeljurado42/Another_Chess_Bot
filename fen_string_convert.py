@@ -85,6 +85,7 @@ def convert_fen_string(fen):
 
 def create_blank_emission_matrix(white=True):
     """
+<<<<<<< HEAD
     Purpose of this is to create a blank emission matrix. Only information that it stores is the side of the board
 
     Current emission Encodding:
