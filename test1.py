@@ -94,7 +94,6 @@ prepare_test(board, fen1)
 
 
 # %%
- %%
 fen1 = '7k/8/8/8/8/8/8/K7 w - - 0 74'
 
 board.set_fen(fen1)
