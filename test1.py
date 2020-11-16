@@ -63,7 +63,7 @@ def test_moves(board):
     """
 
     mcts_game = GameAPI(board)
-    mcts_game.print_board()
+    #mcts_game.print_board()
     moves = list(board.generate_legal_moves())
 
     for move in moves:
@@ -79,6 +79,7 @@ def test_moves(board):
         ## Ensure that we are getting back the same move string ##
         if move_str != the_move.uci():
             print(move_str, "!=", the_move.uci())
+            print(mcts_game.stringRepresentation())
             assert(False)
 
         mcts_game.pop()
@@ -89,7 +90,8 @@ play_random_game()
 #%%
 
 fen1 = '7k/1P6/8/8/8/8/8/8 w - - 0 74'
-prepare_test(board, fen1)
+board.set_fen(fen1)
+test_moves(board)
 
 
 
