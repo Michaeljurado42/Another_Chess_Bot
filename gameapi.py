@@ -90,7 +90,7 @@ class GameAPI():
             variation = (column_variation, row_variation)
             
             def get_move_index(i):
-                print(from_square_position, 73 *(8 * (from_square_position[0] - 1) + from_square_position[1] - 1 ), i)
+                #print(from_square_position, 73 *(8 * (from_square_position[0] - 1) + from_square_position[1] - 1 ), i)
                 return (73 *(8 * (from_square_position[0] - 1) + from_square_position[1] - 1 ) + i)
             
             if (move.promotion != None):
