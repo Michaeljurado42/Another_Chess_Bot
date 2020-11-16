@@ -2,7 +2,7 @@
 
 import chess
 import hyperparams
-import numpy
+import numpy as np
 from fen_string_convert import convert_fen_string
 from math import floor
 
@@ -51,12 +51,18 @@ class GameAPI():
         board = convert_fen_string(self.board_fen)
         return board
 
-    def getValidMoves(self):
+    def getValidMoves(self, moves=None):
         """ Return list of valid pseudo legal moves.  """
+
         # valid_moves is a list of chess.Move objects
-        valid_moves = self.board.generate_pseudo_legal_moves()
+        if moves is None:
+            valid_moves = self.board.generate_pseudo_legal_moves()
+        else:
+            # For debugging purposes
+            valid_moves = moves
+
         # action_mask is a 1-hot encoded vector of size 4673 version of valid_moves
-        action_mask = [0] * self.getActionSize()
+        action_mask = np.array([0] * self.getActionSize())
 
 
         # For every move in valid_moves, fill a 1 into the appropriate element
@@ -140,11 +146,13 @@ class GameAPI():
 
 
     def make_move(self, action):
-        """ Make the move """
+        """ Make the move 
+            action : Numpy array of size 4673.  There should be exactly 1 element that is set to 1.
+        """
         # TO-DO: implement normal promotion from a pawn to a queen. Currently only underpromotions are supported.
         # action is a 1-hot encoded vector of size 4673.  Convert it to
         # a chess.Move object
-        index = action.index(action)
+        index = np.nonzero(action)[0][0]
         action_type = index % 73
         row = int(((index - action_type) % (73*8)) / 73) #starts at 0
         column = floor(index / (73*8)) # starts at 0
@@ -212,7 +220,35 @@ class GameAPI():
             
 
         self.board.push(move)
-        return
+        # Return the move for inspection/debugging purposes
+        return move
+
+    def print_board(self):
+        board = self.board
+        rows = ['8', '7', '6', '5', '4', '3', '2', '1']
+        fen = board.board_fen()
+
+        fb = "   A   B   C   D   E   F   G   H  "
+        fb += rows[0]
+        ind = 1
+        for f in fen:
+            if f == '/':
+                fb += '|' + rows[ind]
+                ind += 1
+            elif f.isnumeric():
+                for i in range(int(f)):
+                    fb += '|   '
+            else:
+                fb += '| ' + f + ' '
+        fb += '|'
+
+        ind = 0
+        for i in range(9):
+            for j in range(34):
+                print(fb[ind], end='')
+                ind += 1
+            print('\n', end='')
+        print("")
 
 
     def time_left(self):

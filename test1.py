@@ -97,3 +97,45 @@ values = np.nonzero(np.array(valid_moves))
 
 values
 # %%
+
+# tests for make_move
+actions = [0] * 4673
+actions[1029] = 1
+actions = np.array(actions)
+
+fen1 = '7k/1P6/8/8/8/8/8/8 w - - 0 74'
+
+board.set_fen(fen1)
+format_print_board(board)
+moves =list(board.generate_legal_moves())
+for move in moves:
+    print(move.uci(), end=' ')
+
+len(moves)
+
+mcts_game = GameAPI(board)
+mcts_game.stringRepresentation()
+move = mcts_game.make_move(actions)
+mcts_game.print_board()
+move
+
+actions2 = mcts_game.getValidMoves([move])
+
+actions[4672] = 1
+
+assert(np.sum(actions == actions2) == 4673)
+
+
+
+#%%
+np.nonzero(actions)
+
+
+
+
+
+
+# %%
+
+
+# %%
