@@ -1,4 +1,5 @@
 #%%
+import numpy as np
 import chess
 from game import *
 from play_game import *
@@ -45,6 +46,7 @@ valid_moves = mcts_game.getValidMoves()
 
 np.nonzero(np.array(valid_moves))
 
+# should be equal to [7, 14, 35, 4672]
 
 # %%
 
@@ -67,6 +69,31 @@ mcts_game.stringRepresentation()
 
 # %%
 valid_moves = mcts_game.getValidMoves()
-np.nonzero(np.array(valid_moves))
+values = np.nonzero(np.array(valid_moves))
+## should get set   ([3619, 3591, 3612, 3598, 3584, 3626, 3577, 3605])
+values
 
+
+# %%
+# Test 3
+fen1 = '7k/1P6/8/8/8/8/8/8 w - - 0 74'
+
+board.set_fen(fen1)
+format_print_board(board)
+moves =list(board.generate_legal_moves())
+for move in moves:
+    print(move.uci(), end=' ')
+
+len(moves)
+
+
+mcts_game = GameAPI(board)
+mcts_game.stringRepresentation()
+
+
+# %%
+valid_moves = mcts_game.getValidMoves()
+values = np.nonzero(np.array(valid_moves))
+
+values
 # %%

@@ -80,7 +80,7 @@ class GameAPI():
             
             # get the variation in rows and columns characterizing the move
             column_variation = to_square_position[0] - from_square_position[0]
-            row_variation = to_square_position[1] - from_square_position[0]
+            row_variation = to_square_position[1] - from_square_position[1]
             variation = (column_variation, row_variation)
             
             def get_move_index(i):
