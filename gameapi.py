@@ -63,7 +63,7 @@ class GameAPI():
         # of action_mask
         action_mask[-1] = 1 # for pass action
         
-        column_convert = {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6, 'g': 7}
+        column_convert = {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6, 'g': 7, 'h': 8}
         
         for move in valid_moves:
             # get squares from the move
@@ -75,8 +75,8 @@ class GameAPI():
             to_square_name = chess.square_name(to_square)
             
             # get numerical position of squares
-            from_square_position = [column_convert(from_square_name[0]), int(from_square_name[1])]
-            to_square_position = [column_convert(to_square_name[0]), int(to_square_name[1])]
+            from_square_position = [column_convert[from_square_name[0]], int(from_square_name[1])]
+            to_square_position = [column_convert[to_square_name[0]], int(to_square_name[1])]
             
             # get the variation in rows and columns characterizing the move
             column_variation = to_square_position[0] - from_square_position[0]
@@ -133,7 +133,7 @@ class GameAPI():
             else:
                 knight_moves = {(-2,-1): 56, (-2,1): 57, (-1,2): 58, (1,2): 59, (2,1): 60, (2,-1): 61, (1,-2): 62, (-1,-2): 63}
             
-                action_mask[get_move_index(knight_moves(variation))] = 1
+                action_mask[get_move_index(knight_moves[variation])] = 1
         
 
         return action_mask
