@@ -16,9 +16,9 @@ class GameAPI():
         # Store the current state of the board at the beginning of our players turn
         # self.board_fen can then be used to restore to this state every time we do
         # a new simulation in MCTS
-        self.board_fen = board.board_fen()
+        self.fen = board.fen()
         self.board = chess.Board()
-        self.board.set_fen(self.board_fen)
+        self.board.set_fen(self.fen)
 
         # Probably should keep track of time-limit ourselves unless we
         # have access to Game object from the template code
@@ -27,10 +27,10 @@ class GameAPI():
     def restore_board(self):
         """ Restore back to the board_fen when this GameAPI was constructed.  Can be called at the start of 
         a new simulation to change board state back to root node """
-        self.board.set_fen(self.board_fen)
+        self.board.set_fen(self.fen)
 
     def stringRepresentation(self):
-        return self.board.board_fen()
+        return self.board.fen()
 
 
     def getCanonicalBoardSize(self):
@@ -48,7 +48,7 @@ class GameAPI():
 
     def getCanonicalBoard(self):
         """ Returns the 20x8x8 board that can be fed to our neural network """
-        board = convert_fen_string(self.board_fen)
+        board = convert_fen_string(self.fen)
         return board
 
     def getValidMoves(self, moves=None):
@@ -158,7 +158,6 @@ class GameAPI():
         row = int(((index - action_type) % (73*8)) / 73) #starts at 0
         column = floor(index / (73*8)) # starts at 0
     
-        
         if (action_type >= 64 and action_type <= 66):
             if (row == 6):
                 move = chess.Move(chess.square(column, row), chess.square(column - 65 + action_type, row+1),chess.ROOK)
@@ -176,10 +175,12 @@ class GameAPI():
                 move = chess.Move(chess.square(column, row), chess.square(column - 71 + action_type, row+1),chess.KNIGHT)
             else:
                 move = chess.Move(chess.square(column, row), chess.square(column - 71 + action_type, row - 1),chess.KNIGHT)
-        
-        elif (action_type == 73):
-            move = chess.Move.null()
-    
+
+        elif index == len(action) - 1:
+            # Pass move.  Last element in action == 1
+            # chess.Move.null seems to break board.push()
+            move = chess.Move(chess.square(0, 0), chess.square(0, 0))
+
         elif (action_type <= 6):
             dest_row = row
             dest_col = column - action_type - 1
@@ -218,8 +219,7 @@ class GameAPI():
             dest_row = knight_move[1] + row
             dest_col = knight_move[0] + column
             move = chess.Move(chess.square(column, row), chess.square(dest_col, dest_row))
-            
-
+         
         self.board.push(move)
         # Return the move for inspection/debugging purposes
         return move

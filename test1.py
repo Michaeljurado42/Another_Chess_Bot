@@ -51,7 +51,7 @@ def play_random_game():
         requested_move, taken_move, captured_square, reason = game.handle_move(move)
         player.handle_move_result(requested_move, taken_move, reason, captured_square is not None,
                               captured_square)
-
+        
 
         game.end_turn()
     print("Finished testing a game with", move_number, "moves")
@@ -66,6 +66,7 @@ def test_moves(board):
 
     mcts_game = GameAPI(board)
     #mcts_game.print_board()
+    #print(board.fen())
     moves = list(board.generate_legal_moves())
 
     for move in moves:
@@ -88,3 +89,62 @@ def test_moves(board):
 
 #%%
 play_random_game()
+
+
+
+#%%
+# Test pawn capture for black
+fen = "K7/8/8/8/8/8/p7/RN6 b KQkq - 0 1"
+board.set_fen(fen)
+
+format_print_board(board)
+
+moves = list(board.generate_legal_moves())
+for move in moves:
+    print(move)
+
+test_moves(board)
+
+
+# %%
+
+# Test pawn capture for white
+fen = "Kq6/P7/8/8/8/8/p7/R7 w KQkq - 0 1"
+board.set_fen(fen)
+
+format_print_board(board)
+
+moves = list(board.generate_legal_moves())
+for move in moves:
+    print(move)
+
+test_moves(board)
+
+
+# %%
+
+# Test pass
+fen = "r3k1nr/p2p2pp/n1p1p3/1p2Np2/1bP1Bq2/2N5/PP1P1PPP/R1BQK2R b KQkq - 1 16"
+
+board.set_fen(fen)
+assert(board.fen() == fen)
+
+gameapi = GameAPI(board)
+assert(gameapi.board.fen() == fen)
+
+# The null move is where the last element is a 1
+action = np.array([0] * 4673)
+action[-1] = 1
+
+move = gameapi.make_move(action)
+
+# A null move is represented as "0000"
+assert(move.uci() == "0000")
+
+# Turn should have changed
+assert(gameapi.board.fen() != fen)
+# ... board pieces should not have moved
+assert(gameapi.board.board_fen() == board.board_fen())
+
+
+# %%
