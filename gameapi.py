@@ -90,6 +90,7 @@ class GameAPI():
             variation = (column_variation, row_variation)
             
             def get_move_index(i):
+                print(from_square_position, 73 *(8 * (from_square_position[0] - 1) + from_square_position[1] - 1 ), i)
                 return (73 *(8 * (from_square_position[0] - 1) + from_square_position[1] - 1 ) + i)
             
             if (move.promotion != None):
@@ -181,7 +182,7 @@ class GameAPI():
     
         elif (action_type <= 6):
             dest_row = row
-            dest_col = column - action_type
+            dest_col = column - action_type - 1
             move = chess.Move(chess.square(column, row), chess.square(dest_col, dest_row))
         elif (action_type >= 7 and action_type <= 13):
             dest_col = column
