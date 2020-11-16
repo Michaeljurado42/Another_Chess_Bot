@@ -213,7 +213,7 @@ class GameAPI():
             move = chess.Move(chess.square(column, row), chess.square(dest_col, dest_row))
         elif (action_type >= 56 and action_type <= 63):
             knight_moves = {56: (-2,-1), 57: (-2,1), 58: (-1,2), 59: (2,1), 60: (2,1), 61: (2,-1), 62: (1,-2), 63: (-1,-2)}
-            knight_move = knight_moves(action_type)
+            knight_move = knight_moves[action_type]
             dest_row = knight_move[1] + row
             dest_col = knight_move[0] + column
             move = chess.Move(chess.square(column, row), chess.square(dest_col, dest_row))
@@ -222,6 +222,10 @@ class GameAPI():
         self.board.push(move)
         # Return the move for inspection/debugging purposes
         return move
+
+    ## Following methods are mostly for Debugging and Testing
+    def pop(self):
+        self.board.pop()
 
     def print_board(self):
         board = self.board
