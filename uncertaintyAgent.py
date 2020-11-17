@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
 
 """
-File Name:      random_agent.py
-Authors:        Michael Johnson and Leng Ghuy
-Date:           March 9th, 2019
-
-Description:    Python file of a random bot
-Source:         Adapted from recon-chess (https://pypi.org/project/reconchess/)
+Instructions.
+Run modified_play_game.py uncertaintyAgent uncertaintyAgent
 """
 
 import random
 import chess
 from player import Player
+import torch
 
 from fen_string_convert import process_sense, convert_fen_string, get_row_col_from_num, create_blank_emission_matrix
+from uncertainty_rnn import BoardGuesserNetOnline
 
 import numpy as np
 class Random(Player):
@@ -27,6 +25,11 @@ class Random(Player):
         """
         self.white = white
         self.emission_matrix = create_blank_emission_matrix(self.white)
+        self.network = BoardGuesserNetOnline() # neural network for inferring truth board
+        self.network.load_state_dict(torch.load("rnn_model"))
+
+        self.pred_board = None  # where e are saving the truthboard
+        self.hidden = None # where we are saving the hidden states
 
     def handle_opponent_move_result(self, captured_piece, captured_square):
         """
@@ -54,7 +57,7 @@ class Random(Player):
         """
 
         # use emsission matrix here for inference
-        # TODO
+        self.pred_board, self.hidden = self.network(torch.Tensor([self.emission_matrix]), self.hidden)
 
         # neural network stuff
         self.emission_matrix = create_blank_emission_matrix(self.white)  # only clear when you have used the matrix as input to RNN
@@ -94,8 +97,9 @@ class Random(Player):
         """
 
         # Use rnn to figure out state
+        self.pred_board, self.hidden = self.network(torch.Tensor([self.emission_matrix]), self.hidden)
 
-        # use mcts and policy network
+        # I guess polocy network goes below here
 
 
         self.emission_matrix = create_blank_emission_matrix(self.white)  # clear it here
