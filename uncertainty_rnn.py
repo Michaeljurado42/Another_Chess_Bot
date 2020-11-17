@@ -24,10 +24,11 @@ class BoardGuesserNet(nn.Module):
         self.dense1 = torch.nn.Linear(256, 640)
         self.relu3 = torch.nn.ReLU()
 
-        self.dense2 = torch.nn.Linear(640, 1280)
+        self.dense2 = torch.nn.Linear(640, 1152)
         self.sigmoid1 = torch.nn.Sigmoid()  # we use a sigmoid because it has a range of 0 to 1
 
     def forward(self, state):
+
         conv_1_out = self.conv1(state)
         print("conv 1 out shape", conv_1_out.shape)
 
@@ -50,7 +51,7 @@ class BoardGuesserNet(nn.Module):
 
         dense2_out = self.dense2(relu_3)
 
-        return self.sigmoid1(dense2_out.reshape((state.shape[0], 20, 8, 8)))
+        return self.sigmoid1(dense2_out.reshape((state.shape[0], 18, 8, 8)))
 
 
 if __name__ == "__main__":

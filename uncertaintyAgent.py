@@ -18,16 +18,13 @@ from fen_string_convert import process_sense, convert_fen_string, get_row_col_fr
 import numpy as np
 class Random(Player):
 
-    def handle_game_start(self, color, board, white):
+    def handle_game_start(self, color, white):
         """
         This function is called at the start of the game.
 
         :param color: chess.BLACK or chess.WHITE -- your color assignment for the game
         :param board: chess.Board -- initial board state
         """
-        self.board = board
-        self.sense_list = []
-        self.truth_board_list = []
         self.white = white
         self.emission_matrix = create_blank_emission_matrix(self.white)
 
@@ -43,8 +40,6 @@ class Random(Player):
             row, col = get_row_col_from_num(captured_square)
             self.emission_matrix[12, row, col] = 1
 
-        self.sense_list.append(self.emission_matrix)  # could contain no updates
-        self.truth_board_list.append(convert_fen_string(self.board.fen())[:-2, :, :])
 
     def choose_sense(self, possible_sense, possible_moves, seconds_left):
         """
@@ -79,11 +74,9 @@ class Random(Player):
             (A6, None), (B6, None), (C8, None)
         ]
         """
+
         process_sense(sense_result, self.emission_matrix)  # adds sensing information to emission matrix
 
-        # collect our dadaist
-        self.sense_list.append(self.emission_matrix)
-        self.truth_board_list.append(convert_fen_string(self.board.fen())[:-2, :, :])
         pass
 
     def choose_move(self, possible_moves, seconds_left):
@@ -138,8 +131,6 @@ class Random(Player):
         if captured_piece:  # did you capture a piece
             self.emission_matrix[17,:, :] = 1
 
-        # self.sense_list.append(self.emission_matrix)  # could contain no updates
-        # self.truth_board_list.append(convert_fen_string(self.board.fen()))
 
 
     def handle_game_end(self, winner_color, win_reason):  # possible GameHistory object...

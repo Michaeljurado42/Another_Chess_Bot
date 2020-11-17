@@ -28,10 +28,12 @@ def play_local_game(white_player, black_player, player_names):
     time = "{}".format(datetime.today()).replace(" ", "_").replace(":", "-").replace(".", "-")
     filename_game = "GameHistory/" + time + "game_boards.txt"
     filename_true = "GameHistory/" + time + "true_boards.txt"
-    output = open(filename_game, "w")
-    output_true = open(filename_true, "w")
-    output.write("Starting Game between {}-WHITE and {}-BLACK\n".format(player_names[0], player_names[1]))
-    output_true.write("Starting Game between {}-WHITE and {}-BLACK\n".format(player_names[0], player_names[1]))
+    # output = open(filename_game, "w")
+    output = None
+    output_true = None
+    # output_true = open(filename_true, "w")
+    # output.write("Starting Game between {}-WHITE and {}-BLACK\n".format(player_names[0], player_names[1]))
+    # output_true.write("Starting Game between {}-WHITE and {}-BLACK\n".format(player_names[0], player_names[1]))
 
     # whom: Modified to pass in truth_board.  This won't be available when we turn in the assignment
     white_player.handle_game_start(chess.WHITE, game.truth_board, white=True)
@@ -42,42 +44,43 @@ def play_local_game(white_player, black_player, player_names):
     move_number = 1
     while not game.is_over():
         if game.turn:
-            output.write("##################################--WHITE's Turn [{}]\n".format(move_number))
-            output.write("##################################--Current Board State\n")
-            format_write_board(output, game.white_board)
-            output_true.write("##################################--WHITE's Turn [{}]\n".format(move_number))
+            # output.write("##################################--WHITE's Turn [{}]\n".format(move_number))
+            # output.write("##################################--Current Board State\n")
+            #e_board(output, game.white_board)
+            # output_true.write("##################################--WHITE's Turn [{}]\n".format(move_number))
 
-            print("WHITE's Turn [{}]".format(move_number))
-            format_print_board(game.white_board)
-
+#            print("WHITE's Turn [{}]".format(move_number))
+            #format_print_board(game.white_board)
+            pass
         else:
-            output.write("##################################--BLACK's Turn [{}]\n".format(move_number))
-            output.write("##################################--Current Board State \n")
-            format_write_board(output, game.black_board)
-            output_true.write("##################################--BLACK's Turn [{}]\n".format(move_number))
+            pass
+            # output.write("##################################--BLACK's Turn [{}]\n".format(move_number))
+            # output.write("##################################--Current Board State \n")
+           # format_write_board(output, game.black_board)
+            # output_true.write("##################################--BLACK's Turn [{}]\n".format(move_number))
 
-            print("BLACK's Turn [{}]".format(move_number))
-            format_print_board(game.black_board)
+            # print("BLACK's Turn [{}]".format(move_number))
+            #format_print_board(game.black_board)
 
-        output_true.write("##################################--Current Board State\n")
-        format_write_board(output_true, game.truth_board)
+        # output_true.write("##################################--Current Board State\n")
+       # format_write_board(output_true, game.truth_board)
 
         requested_move, taken_move = play_turn(game, players[game.turn], game.turn, move_number, output, output_true)
-        print_game(game, move_number, game.turn, requested_move, taken_move)
+        #print_game(game, move_number, game.turn, requested_move, taken_move)
         move_number += 1
 
-        print("==================================\n")
+        # print("==================================\n")
 
     winner_color, winner_reason = game.get_winner()
 
     white_player.handle_game_end(winner_color, winner_reason)
     black_player.handle_game_end(winner_color, winner_reason)
 
-    output.write("Game Over!\n")
-    if winner_color is not None:
-        output.write(winner_reason)
-    else:
-        output.write('Draw!')
+  #  output.write("Game Over!\n")
+  #   if winner_color is not None:
+  #       output.write(winner_reason)
+  #   else:
+  #       output.write('Draw!')
     return winner_color, winner_reason
 
 
@@ -93,13 +96,13 @@ def play_turn(game, player, turn, move_number, output, output_true):
     sense = player.choose_sense(possible_sense, possible_moves, game.get_seconds_left())
     sense_result = game.handle_sense(sense)
     player.handle_sense_result(sense_result)
-    print_sense(game, turn, sense)
+    #print_sense(game, turn, sense)
 
-    output.write("##################################--Sense Around Square {}\n".format(chess.SQUARE_NAMES[sense]))
-    if turn:
-        format_write_board(output, game.white_board)
-    else:
-        format_write_board(output, game.black_board)
+    #output.write("##################################--Sense Around Square {}\n".format(chess.SQUARE_NAMES[sense]))
+    # if turn:
+    #     format_write_board(output, game.white_board)
+    # else:
+    #     format_write_board(output, game.black_board)
 
     # play move action
     move = player.choose_move(possible_moves, game.get_seconds_left())
@@ -107,18 +110,18 @@ def play_turn(game, player, turn, move_number, output, output_true):
     player.handle_move_result(requested_move, taken_move, reason, captured_square is not None,
                               captured_square)
 
-    output.write(
-        "##################################--Move requested: {} -- Move taken: {}\n".format(requested_move, taken_move))
-    output_true.write(
-        "##################################--Move requested: {} -- Move taken: {}\n\n".format(requested_move,
-                                                                                              taken_move))
-    if turn:
-        format_write_board(output, game.white_board)
-    else:
-        format_write_board(output, game.black_board)
+    # output.write(
+    #     "##################################--Move requested: {} -- Move taken: {}\n".format(requested_move, taken_move))
+    # output_true.write(
+    #     "##################################--Move requested: {} -- Move taken: {}\n\n".format(requested_move,
+    #                                                                                           taken_move))
+    # if turn:
+    #     format_write_board(output, game.white_board)
+    # else:
+    #     format_write_board(output, game.black_board)
 
-    output.write("##################################--Truth Board State\n")
-    format_write_board(output, game.truth_board)
+    # output.write("##################################--Truth Board State\n")
+    #format_write_board(output, game.truth_board)
 
     game.end_turn()
     return requested_move, taken_move
@@ -225,7 +228,7 @@ if __name__ == '__main__':
     y = open("black_game_obs.pkl", "wb")
 
     pickle.dump((player_one.sense_list, player_one.truth_board_list), x)
-    pickle.dump((player_two.sense_list, player_two.truth_board_list), x)
+    pickle.dump((player_two.sense_list, player_two.truth_board_list), y)
     x.close()
     y.close()
     print('Game Over!')
