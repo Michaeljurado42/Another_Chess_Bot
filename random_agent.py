@@ -13,7 +13,7 @@ import random
 import chess
 from player import Player
 
-
+from fen_string_convert import process_sense, convert_fen_string, create_blank_emission_matrix
 class Random(Player):
         
     def handle_game_start(self, color, board):
@@ -45,6 +45,7 @@ class Random(Player):
         :return: chess.SQUARE -- the center of 3x3 section of the board you want to sense
         :example: choice = chess.A1
         """
+
         return random.choice(possible_sense)
         
     def handle_sense_result(self, sense_result):
@@ -61,6 +62,7 @@ class Random(Player):
             (A6, None), (B6, None), (C8, None)
         ]
         """
+        process_sense(sense_result)
         pass
 
     def choose_move(self, possible_moves, seconds_left):
