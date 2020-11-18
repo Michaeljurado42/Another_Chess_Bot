@@ -203,18 +203,11 @@ def format_write_board(out, board):
         out.write('\n')
     out.write('\n')
 
+def play_game(first_path, second_path):
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Allows you to play against a bot. Useful for testing and debugging.')
-    parser.add_argument('first_path', help='Path to first bot source file.')
-    parser.add_argument('second_path', help='Path to second bot source file.')
-    # parser.add_argument('--color', default='random', choices=['white', 'black', 'random'],
-    #                    help='The color you want to play as.')
-    args = parser.parse_args()
-
-    name_one, constructor_one = load_player(args.first_path)
+    name_one, constructor_one = load_player(first_path)
     player_one = constructor_one()
-    name_two, constructor_two = load_player(args.second_path)
+    name_two, constructor_two = load_player(second_path)
     player_two = constructor_two()
 
     players = [player_one, player_two]
@@ -230,16 +223,22 @@ if __name__ == '__main__':
 
     if not isinstance(player_one, Random):
         """Saving Data from game"""
-        x = open("white_game_obs.pkl", "wb")
-        y = open("black_game_obs.pkl", "wb")
-
-        pickle.dump((player_one.sense_list, player_one.truth_board_list), x)
-        pickle.dump((player_two.sense_list, player_two.truth_board_list), y)
-        x.close()
-        y.close()
+        return (player_one.sense_list, player_one.truth_board_list), (player_two.sense_list, player_two.truth_board_list)
 
     print('Game Over!')
     if win_color is not None:
         print(win_reason)
     else:
         print('Draw!')
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Allows you to play against a bot. Useful for testing and debugging.')
+    parser.add_argument('first_path', help='Path to first bot source file.')
+    parser.add_argument('second_path', help='Path to second bot source file.')
+    # parser.add_argument('--color', default='random', choices=['white', 'black', 'random'],
+    #                    help='The color you want to play as.')
+    args = parser.parse_args()
+    print(play_game(args.first_path, args.second_path))
+
+
+
