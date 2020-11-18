@@ -1,0 +1,15 @@
+
+
+Proposition for the input of the RNN
+15x8x8
+
+12x8x8: 100% sure positions. So, for white, all his pieces and the  opponent pieces he sensed in his last move.
+2x8x8: pieces we know are there but we don't necessarily know their type. So, for white, all his pieces and the position of opponent pieces who have just taken one of white's pieces.
+1x8x8: squares that we know for sure are empty. So, for white, empty squares he just sensed and empty squares that he crossed with his white piece on his last move.
+
+Total: 15x8x8
+
+
+
+Output of the RNN:
+12x8x8: actual positions
