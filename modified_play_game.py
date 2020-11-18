@@ -36,13 +36,13 @@ def play_local_game(white_player, black_player, player_names):
     # output.write("Starting Game between {}-WHITE and {}-BLACK\n".format(player_names[0], player_names[1]))
     # output_true.write("Starting Game between {}-WHITE and {}-BLACK\n".format(player_names[0], player_names[1]))
 
-    # whom: Modified to pass in truth_board.  This won't be available when we turn in the assignment
-    if isinstance(white_player, Random):
-        white_player.handle_game_start(chess.WHITE,  white=True)
-        black_player.handle_game_start(chess.BLACK,  white=False)
-    else:
-        white_player.handle_game_start(chess.WHITE, game.truth_board, white=True)
-        black_player.handle_game_start(chess.BLACK, game.truth_board, white=False)
+    # # whom: Modified to pass in truth_board.  This won't be available when we turn in the assignment
+    # if isinstance(white_player, Random):
+    #     white_player.handle_game_start(chess.WHITE,  white=True)
+    #     black_player.handle_game_start(chess.BLACK,  white=False)
+    # else:
+    white_player.handle_game_start(chess.WHITE, game.truth_board, white=True)
+    black_player.handle_game_start(chess.BLACK, game.truth_board, white=False)
 
     game.start()
 
