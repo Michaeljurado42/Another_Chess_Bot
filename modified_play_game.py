@@ -220,16 +220,17 @@ def play_game(first_path, second_path):
             player_names.reverse()
 
     win_color, win_reason = play_local_game(players[0], players[1], player_names)
-
-    if not isinstance(player_one, Random):
-        """Saving Data from game"""
-        return (player_one.sense_list, player_one.truth_board_list), (player_two.sense_list, player_two.truth_board_list)
-
     print('Game Over!')
     if win_color is not None:
         print(win_reason)
     else:
         print('Draw!')
+
+    if not isinstance(player_one, Random):
+        """Saving Data from game"""
+        return (player_one.sense_list, player_one.truth_board_list), (player_two.sense_list, player_two.truth_board_list)
+
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Allows you to play against a bot. Useful for testing and debugging.')
@@ -238,7 +239,7 @@ if __name__ == '__main__':
     # parser.add_argument('--color', default='random', choices=['white', 'black', 'random'],
     #                    help='The color you want to play as.')
     args = parser.parse_args()
-    print(play_game(args.first_path, args.second_path))
+    play_game(args.first_path, args.second_path)
 
 
 

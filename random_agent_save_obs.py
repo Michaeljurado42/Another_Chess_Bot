@@ -13,7 +13,7 @@ import random
 import chess
 from player import Player
 
-from fen_string_convert import process_sense, convert_fen_string, get_row_col_from_num, create_blank_emission_matrix
+from fen_string_convert import process_sense, convert_fen_string, get_row_col_from_num, create_blank_emission_matrix, get_truncated_board
 
 import numpy as np
 class Random(Player):
@@ -44,7 +44,7 @@ class Random(Player):
             self.emission_matrix[12, row, col] = 1
 
         self.sense_list.append(self.emission_matrix)  # could contain no updates
-        self.truth_board_list.append(convert_fen_string(self.board.fen())[:-2, :, :])
+        self.truth_board_list.append(get_truncated_board(self.board))
 
     def choose_sense(self, possible_sense, possible_moves, seconds_left):
         """
@@ -81,9 +81,9 @@ class Random(Player):
         """
         process_sense(sense_result, self.emission_matrix)  # adds sensing information to emission matrix
 
-        # collect our dadaist
+        # collect dataset
         self.sense_list.append(self.emission_matrix)
-        self.truth_board_list.append(convert_fen_string(self.board.fen())[:-2, :, :])
+        self.truth_board_list.append(get_truncated_board(self.board))
         pass
 
     def choose_move(self, possible_moves, seconds_left):
