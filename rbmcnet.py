@@ -7,6 +7,10 @@ import torch.nn.functional as F
 import hyperparams
 import time
 import numpy as np
+import os
+from tqdm import tqdm
+from fen_string_convert import convert_fen_string
+import math
 
 class ConvBlock(nn.Module):
     # Channels
@@ -139,15 +143,19 @@ class NNetWrapper():
         self.channels, self.board_x, self.board_y = hyperparams.input_dims
         self.action_size = hyperparams.action_size
         self.nnet = RbmcNet(hyperparams.input_dims, hyperparams.action_size)
+        self.device = "cuda:0"
 
         if self.cuda:
-            self.nnet.cuda()
+            self.nnet.to(self.device)
 
-    def train(self, examples):
+    def train(self, training_examples):
         """
         examples: list of examples, each example is of form (board, pi, v)
         """
-        optimizer = optim.Adam(self.nnet.parameters())
+        optimizer = torch.optim.Adam(self.nnet.parameters())
+
+        examples = [(convert_fen_string(fen), pi, z) for (fen, pi, z) in training_examples]
+
 
         for epoch in range(self.epochs):
             print('EPOCH ::: ' + str(epoch + 1))
@@ -184,6 +192,12 @@ class NNetWrapper():
                 optimizer.zero_grad()
                 total_loss.backward()
                 optimizer.step()
+                
+                # Save model
+                filename = "epoch_" + str(epoch) + ".pth.tar"
+                self.save_checkpoint(filename=filename)
+
+        return total_loss
 
     def predict(self, board):
         """
@@ -194,7 +208,7 @@ class NNetWrapper():
 
         # preparing input
         board = torch.FloatTensor(board.astype(np.float64))
-        if self.cuda: board = board.contiguous().cuda()
+        if self.cuda: board = board.contiguous().to(self.device)
 
         # whom: what is this line for?  
         #board = board.view(1, self.board_x, self.board_y)
@@ -207,7 +221,7 @@ class NNetWrapper():
         return torch.exp(pi).data.cpu().numpy()[0], v.data.cpu().numpy()[0]
 
     def loss_pi(self, targets, outputs):
-        return -torch.sum(targets * outputs) / targets.size()[0]
+        return -torch.sum(targets * torch.log(outputs + 1e-10)) / targets.size()[0]
 
     def loss_v(self, targets, outputs):
         return torch.sum((targets - outputs.view(-1)) ** 2) / targets.size()[0]
@@ -217,8 +231,7 @@ class NNetWrapper():
         if not os.path.exists(folder):
             print("Checkpoint Directory does not exist! Making directory {}".format(folder))
             os.mkdir(folder)
-        else:
-            print("Checkpoint Directory exists! ")
+  
         torch.save({
             'state_dict': self.nnet.state_dict(),
         }, filepath)
@@ -231,3 +244,29 @@ class NNetWrapper():
         map_location = None if self.cuda else 'cpu'
         checkpoint = torch.load(filepath, map_location=map_location)
         self.nnet.load_state_dict(checkpoint['state_dict'])
+
+
+
+class AverageMeter(object):
+    """From https://github.com/pytorch/examples/blob/master/imagenet/main.py"""
+
+    def __init__(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def __repr__(self):
+        return str(self.avg)
+        #return f'{self.avg:.2e}'
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
+
+
+class dotdict(dict):
+    def __getattr__(self, name):
+        return self[name]

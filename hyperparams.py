@@ -3,7 +3,7 @@
 # Run with GPU.  Set this to false if 
 # getting runtime errors on version python 3.5
 # Seems to run fine for python 3.7.9
-use_gpu = True
+use_gpu = False
 
 # Variables for training neural network
 batch_size = 128

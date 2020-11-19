@@ -16,6 +16,9 @@ from mcts import MCTS
 from rbmcnet import RbmcNet, NNetWrapper
 from gameapi import GameAPI
 import torch
+import chess.engine
+import numpy as np
+from stockfish import Stockfish
 
 
 # TODO: Rename this class to what you would like your bot to be named during the game.
@@ -26,9 +29,7 @@ class AnotherChessBot(Player):
         self.color = None
         self.board = None
 
-        self.load_weights = False
-        self.training_enabled = True
-
+        self.load_weights = True
         
     def handle_game_start(self, color, board):
         """
@@ -42,12 +43,12 @@ class AnotherChessBot(Player):
         self.board = board
         self.color = color
         self.move_count = 0
-        self.history = []
-        
+        self.use_stockfish = False
+
         self.nnet = NNetWrapper()
-        if self.load_weights == False:
-            # Load in neural network weights
-            pass
+
+        if self.load_weights:
+            self.nnet.load_checkpoint(folder="models", filename="stockfish.pth.tar")
 
        
     def handle_opponent_move_result(self, captured_piece, captured_square):
@@ -112,23 +113,30 @@ class AnotherChessBot(Player):
         # During training self.board has been modified to be the truth board
         current_board = self.board
 
-        game = GameAPI(current_board)
-        mcts = MCTS(game, self.nnet, num_mcts_sims=1000, cpuct=1.0)
+        gameapi = GameAPI(current_board)
+        gameapi.print_board()
 
-        probs = mcts.getActionProb(temp = self.move_count < 30)
+        # Endgame move to capture the opponent king
+        move = gameapi.end_game_move(self.color)
+        if move is not None:
+            return move
+
+        mcts = MCTS(gameapi, self.nnet, num_mcts_sims=2, cpuct=1.0)
+
+        probs = mcts.getActionProb()
         best_move = np.argmax(probs)
 
         # convert best_move to Move object
-        choice = game.to_move(best_move)
+        move = gameapi.make_move(best_move, apply_move=False)
+        
+        if self.use_stockfish:
+            stockfish = Stockfish("/usr/games/stockfish")
+            stockfish.set_fen_position(gameapi.fen)
 
-        # Store these probabilities for the current time step
-        # We should also store who is the predicted winner
-        self.history.append(probs)
+            move = stockfish.get_best_move()
+            move = chess.Move.from_uci(move)
 
-    
-
-        choice = random.choice(possible_moves)
-        return choice
+        return move
         
     def handle_move_result(self, requested_move, taken_move, reason, captured_piece, captured_square):
         """
