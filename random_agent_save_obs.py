@@ -13,7 +13,7 @@ import random
 import chess
 from player import Player
 
-from fen_string_convert import process_sense, convert_fen_string, get_row_col_from_num, create_blank_emission_matrix
+from fen_string_convert import process_sense, convert_fen_string, get_row_col_from_num, create_blank_emission_matrix, get_truncated_board
 
 import numpy as np
 class Random(Player):
@@ -43,8 +43,8 @@ class Random(Player):
             row, col = get_row_col_from_num(captured_square)
             self.emission_matrix[12, row, col] = 1
 
-        self.sense_list.append(self.emission_matrix)  # could contain no updates
-        self.truth_board_list.append(convert_fen_string(self.board.fen()))
+        # self.sense_list.append(self.emission_matrix)  # could contain no updates
+        # self.truth_board_list.append(get_truncated_board(self.board))
 
     def choose_sense(self, possible_sense, possible_moves, seconds_left):
         """
@@ -62,7 +62,7 @@ class Random(Player):
         # TODO
 
         # neural network stuff
-        self.emission_matrix = create_blank_emission_matrix(self.white)  # only clear when you have used the matrix as input to RNN
+#        self.emission_matrix = create_blank_emission_matrix(self.white)  # only clear when you have used the matrix as input to RNN
         return random.choice(possible_sense)
 
     def handle_sense_result(self, sense_result):
@@ -81,9 +81,9 @@ class Random(Player):
         """
         process_sense(sense_result, self.emission_matrix)  # adds sensing information to emission matrix
 
-        # collect our dadaist
+        # collect dataset
         self.sense_list.append(self.emission_matrix)
-        self.truth_board_list.append(convert_fen_string(self.board.fen()))
+        self.truth_board_list.append(get_truncated_board(self.board))
         pass
 
     def choose_move(self, possible_moves, seconds_left):
@@ -111,7 +111,7 @@ class Random(Player):
 
     def handle_move_result(self, requested_move, taken_move, reason, captured_piece, captured_square):
         """
-        This is a function called at the end of your turn/after your move was made and gives you the chance to update
+        This is a function called at the end of your turn/after yourg move was made and gives you the chance to update
         your board.
 
         :param requested_move: chess.Move -- the move you intended to make

@@ -1,0 +1,16 @@
+# How to train RNN
+"python RNN_train.py"
+
+# Example of how to incorporate uncertainty into an agent
+See uncertaintyAgent.py
+
+# Useful files and funcion
+    fen_string_convert.py -> contains many useful functions for converting between softmax output and truthboard/
+    See comments of get_truncated_board to see how format of softmax output
+
+    uncertainty_rnn.py
+        BoardGuesserNet -> networks that take in emission matrix and output softmaxes
+
+    analyze_game.py -> contains an example of how to load in neural network weights and use it to predict the truth board
+
+
