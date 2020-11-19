@@ -44,6 +44,7 @@ class AnotherChessBot(Player):
         self.color = color
         self.move_count = 0
         self.use_stockfish = False
+        self.use_end_game_move = False
 
         self.nnet = NNetWrapper()
 
@@ -117,9 +118,10 @@ class AnotherChessBot(Player):
         gameapi.print_board()
 
         # Endgame move to capture the opponent king
-        move = gameapi.end_game_move(self.color)
-        if move is not None:
-            return move
+        if self.use_end_game_move: 
+            move = gameapi.end_game_move(self.color)
+            if move is not None:
+                return move
 
         mcts = MCTS(gameapi, self.nnet, num_mcts_sims=2, cpuct=1.0)
 
