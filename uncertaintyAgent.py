@@ -10,13 +10,14 @@ import chess
 from player import Player
 import torch
 
-from fen_string_convert import process_sense, convert_fen_string, get_row_col_from_num, create_blank_emission_matrix
+from fen_string_convert import process_sense, convert_fen_string, get_row_col_from_num, create_blank_emission_matrix, convert_truncated_to_truth
 from uncertainty_rnn import BoardGuesserNetOnline
+
 
 import numpy as np
 class Random(Player):
 
-    def handle_game_start(self, color, white):
+    def handle_game_start(self, color, board, white):
         """
         This function is called at the start of the game.
 
@@ -26,7 +27,11 @@ class Random(Player):
         self.white = white
         self.emission_matrix = create_blank_emission_matrix(self.white)
         self.network = BoardGuesserNetOnline() # neural network for inferring truth board
-        self.network.load_state_dict(torch.load("rnn_model"))
+        if white:
+            self.network.load_state_dict(torch.load("white_rnn_model"))
+        else:
+            self.network.load_state_dict(torch.load("black_rnn_model"))
+        self.board = board
 
         self.pred_board = None  # where e are saving the truthboard
         self.hidden = None # where we are saving the hidden states
@@ -56,11 +61,7 @@ class Random(Player):
         :example: choice = chess.A1
         """
 
-        # use emsission matrix here for inference
-        self.pred_board, self.hidden = self.network(torch.Tensor([self.emission_matrix]), self.hidden)
 
-        # neural network stuff
-        self.emission_matrix = create_blank_emission_matrix(self.white)  # only clear when you have used the matrix as input to RNN
         return random.choice(possible_sense)
 
     def handle_sense_result(self, sense_result):
@@ -97,9 +98,18 @@ class Random(Player):
         """
 
         # Use rnn to figure out state
-        self.pred_board, self.hidden = self.network(torch.Tensor([self.emission_matrix]), self.hidden)
+        self.softmax_out, self.hidden = self.network(torch.Tensor([self.emission_matrix]), self.hidden)
 
-        # I guess polocy network goes below here
+        first_pred_label = self.softmax_out.detach().cpu().numpy()
+
+        # take an argmax to get the most probable board
+        max_pred = np.zeros(first_pred_label.shape)
+        max_pred[np.arange(first_pred_label.shape[0]), np.argmax(first_pred_label, axis=1)] = 1
+
+        # convert it into standard truth board format
+        self.pred_board = convert_truncated_to_truth(max_pred)
+
+        # TODO manually fill in in other channels
 
 
         self.emission_matrix = create_blank_emission_matrix(self.white)  # clear it here

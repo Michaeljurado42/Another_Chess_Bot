@@ -43,8 +43,8 @@ class Random(Player):
             row, col = get_row_col_from_num(captured_square)
             self.emission_matrix[12, row, col] = 1
 
-        self.sense_list.append(self.emission_matrix)  # could contain no updates
-        self.truth_board_list.append(get_truncated_board(self.board))
+        # self.sense_list.append(self.emission_matrix)  # could contain no updates
+        # self.truth_board_list.append(get_truncated_board(self.board))
 
     def choose_sense(self, possible_sense, possible_moves, seconds_left):
         """
@@ -62,7 +62,7 @@ class Random(Player):
         # TODO
 
         # neural network stuff
-        self.emission_matrix = create_blank_emission_matrix(self.white)  # only clear when you have used the matrix as input to RNN
+#        self.emission_matrix = create_blank_emission_matrix(self.white)  # only clear when you have used the matrix as input to RNN
         return random.choice(possible_sense)
 
     def handle_sense_result(self, sense_result):

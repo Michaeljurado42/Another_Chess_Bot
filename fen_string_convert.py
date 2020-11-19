@@ -107,7 +107,7 @@ def create_blank_emission_matrix(white=True):
     :param white: are you white?
     :return: emission board with just white information written to it
     """
-    emission_matrix = np.zeros((19, 8, 8))
+    emission_matrix = np.zeros((18, 8, 8))
     emission_matrix[-1, :, :] = int(white)
     return emission_matrix
 
@@ -215,7 +215,7 @@ def get_truncated_board(truth_board):
 
     new_truth_board = convert_truncated_to_truth(output)
     # uncomment the assertion to get boast in run time
-    assert_truth_board_is_accurate(new_truth_board, raw_truth_board)
+#    assert_truth_board_is_accurate(new_truth_board, raw_truth_board)
     return output
 
 

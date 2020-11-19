@@ -12,7 +12,7 @@ class BoardGuesserNet(nn.Module):
         super(BoardGuesserNet, self).__init__()
 
         """This could be a small backbone"""
-        self.conv1 = torch.nn.Conv2d(19, 32, 3)
+        self.conv1 = torch.nn.Conv2d(18, 32, 3)
         torch.nn.init.xavier_uniform(self.conv1.weight, gain = 1)
         self.relu1 = torch.nn.LeakyReLU()
         self.pool1 = torch.nn.MaxPool2d(2)
@@ -72,7 +72,7 @@ class BoardGuesserNetOnline(nn.Module):
         super(BoardGuesserNetOnline, self).__init__()
 
         """This could be a small backbone"""
-        self.conv1 = torch.nn.Conv2d(19, 32, 3)
+        self.conv1 = torch.nn.Conv2d(18, 32, 3)
 
         self.relu1 = torch.nn.LeakyReLU()
         self.pool1 = torch.nn.MaxPool2d(2)
@@ -128,6 +128,8 @@ class BoardGuesserNetOnline(nn.Module):
 
         return dense2_out.reshape((state.shape[0], 12, 8, 8)), (h_0, c_0)  # 0 to 1
 
+
+
 class BoardGuesserNetSlim(nn.Module):
     """
     Network that we can only use when we are predicting just the opponents pieces.
@@ -137,7 +139,7 @@ class BoardGuesserNetSlim(nn.Module):
         super(BoardGuesserNet, self).__init__()
 
         """This could be a small backbone"""
-        self.conv1 = torch.nn.Conv2d(19, 32, 3)
+        self.conv1 = torch.nn.Conv2d(18, 32, 3)  # use modified emission matrix instead here
         torch.nn.init.xavier_uniform(self.conv1.weight, gain = 1)
         self.relu1 = torch.nn.LeakyReLU()
         self.pool1 = torch.nn.MaxPool2d(2)
