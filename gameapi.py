@@ -145,15 +145,30 @@ class GameAPI():
 
         return action_mask
 
+    def end_game_move(self, player):
+        """ If the opponent king can be captured in a single move, return such a move
+            otherwise return None.
+        """
+        moves = self.board.generate_pseudo_legal_moves()
+        
+        board = chess.Board(self.fen)
+        for move in moves:
+            board.push(move)
+            if board.king(not player) is None:
+                board.pop()
+                return move
+            board.pop()
 
-    def make_move(self, action):
+        return None
+
+    def make_move(self, action, apply_move = True):
         """ Make the move 
             action : Numpy array of size 4673.  There should be exactly 1 element that is set to 1.
         """
         # TO-DO: implement normal promotion from a pawn to a queen. Currently only underpromotions are supported.
         # action is a 1-hot encoded vector of size 4673.  Convert it to
         # a chess.Move object
-        index = np.nonzero(action)[0][0]
+        index = action
         action_type = index % 73
         row = int(((index - action_type) % (73*8)) / 73) #starts at 0
         column = floor(index / (73*8)) # starts at 0
@@ -176,8 +191,7 @@ class GameAPI():
             else:
                 move = chess.Move(chess.square(column, row), chess.square(column - 71 + action_type, row - 1),chess.KNIGHT)
 
-        elif index == len(action) - 1:
-            # Pass move.  Last element in action == 1
+        elif index == self.getActionSize() - 1:
             # chess.Move.null seems to break board.push()
             move = chess.Move(chess.square(0, 0), chess.square(0, 0))
 
@@ -220,7 +234,8 @@ class GameAPI():
             dest_col = knight_move[0] + column
             move = chess.Move(chess.square(column, row), chess.square(dest_col, dest_row))
          
-        self.board.push(move)
+        if apply_move:
+            self.board.push(move)
         # Return the move for inspection/debugging purposes
         return move
 
