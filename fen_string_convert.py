@@ -87,10 +87,12 @@ def start_bookkeeping(white = True):
     if (white):
         pieces = [(0,0,0), (0,0,7), (1,0,1), (1,0,6), (2,0,2), (2,0,5), (3,0,3), (4,0,4), (5,1,0), (5,1,1), (5,1,2), (5,1,3), (5,1,4), (5,1,5), (5,1,6), (5,1,7)]
     else:
-        pieces = [(6,7,0), (6,7,7), (7,7,10), (7,7,6), (8,7,2), (8,7,5), (9,7,3), (10,7,4), (11,6,0), (11,6,1), (11,6,2), (11,6,3), (11,6,4), (11,6,5), (11,6,6), (11,6,7)]
+        pieces = [(6,7,0), (6,7,7), (7,7,1), (7,7,6), (8,7,2), (8,7,5), (9,7,3), (10,7,4), (11,6,0), (11,6,1), (11,6,2), (11,6,3), (11,6,4), (11,6,5), (11,6,6), (11,6,7)]
     
     for piece in pieces:
         bookkeeping[piece] = 1
+        
+    return bookkeeping
         
 def find_piece_type(bookkeeping, row, column):
     for i in range (12):
@@ -129,9 +131,11 @@ def get_row_col_from_num(loc):
     :param loc: board position as number
     :return: row, col of board
     """
-    col = (loc - 1) % 8
+    col = (loc) % 8 # it was loc-1 before
     row = loc // 8
     return row, col
+
+print(get_row_col_from_num(11))
 
 
 def process_sense(sense_result, emission_matrix=np.zeros((16, 8, 8))):
@@ -347,4 +351,14 @@ def assert_truth_board_is_accurate(new_truth_board, truth_board):
             assert arg in truth_args  # can underestimate in the case of promotions
 
         assert len(truth_args) >= len(new_args)
-        
+    
+#debugging
+'''
+bookkeeping = start_bookkeeping(True)
+#print(bookkeeping)
+piece_type = find_piece_type(bookkeeping, 0, 1)
+print(piece_type)
+bookkeeping[piece_type, 0, 1] = 0
+bookkeeping[piece_type, 2, 0] = 1
+print(bookkeeping)
+'''

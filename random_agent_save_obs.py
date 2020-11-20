@@ -28,12 +28,16 @@ class Random(Player):
         :param color: chess.BLACK or chess.WHITE -- your color assignment for the game
         :param board: chess.Board -- initial board state
         """
+        if (color == chess.WHITE):
+            self.white = True
+        else:
+            self.white = False
+        
         self.board = board
         self.sense_list = []
         self.truth_board_list = []
-        self.white = color
         self.emission_matrix = create_blank_emission_matrix(self.white)
-        self.bookkeeping = start_bookkeeping(color)
+        self.bookkeeping = start_bookkeeping(self.white)
 
     def handle_opponent_move_result(self, captured_piece, captured_square):
         """
@@ -52,6 +56,12 @@ class Random(Player):
             self.emission_matrix[13 - int(self.white),row, col] = 0
             self.emission_matrix[12 + int(self.white),row, col] = 1
             
+        dic = {True: "White", False: "Black"}
+        print("{} pieces: ".format(dic[self.white]))
+        
+        for i in range(12):
+            print(self.bookkeeping[i,:,:])
+            
 
         # self.sense_list.append(self.emission_matrix)  # could contain no updates
         # self.truth_board_list.append(get_truncated_board(self.board))
@@ -68,7 +78,7 @@ class Random(Player):
         :example: choice = chess.A1
         """
 
-        # use emsission matrix here for inference
+        # use emission matrix here for inference
         # TODO
 
         # neural network stuff
