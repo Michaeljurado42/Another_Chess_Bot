@@ -82,6 +82,21 @@ def convert_fen_string(fen):
 # np.set_printoptions(threshold= sys.maxsize)
 # print(convert_fen_string("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"))
 
+def start_bookkeeping(white = True):
+    bookkeeping = np.zeros((12, 8, 8))
+    if (white):
+        pieces = [(0,0,0), (0,0,7), (1,0,1), (1,0,6), (2,0,2), (2,0,5), (3,0,3), (4,0,4), (5,1,0), (5,1,1), (5,1,2), (5,1,3), (5,1,4), (5,1,5), (5,1,6), (5,1,7)]
+    else:
+        pieces = [(6,7,0), (6,7,7), (7,7,10), (7,7,6), (8,7,2), (8,7,5), (9,7,3), (10,7,4), (11,6,0), (11,6,1), (11,6,2), (11,6,3), (11,6,4), (11,6,5), (11,6,6), (11,6,7)]
+    
+    for piece in pieces:
+        bookkeeping[piece] = 1
+        
+def find_piece_type(bookkeeping, row, column):
+    for i in range (12):
+        if (bookkeeping[i,row,column] == 1):
+            return i
+    raise Exception("Sorry, that square does not have any piece on it")
 
 def create_blank_emission_matrix(white=True):
     """
@@ -89,27 +104,23 @@ def create_blank_emission_matrix(white=True):
     Purpose of this is to create a blank emission matrix. Only information that it stores is the side of the board
 
     Current emission Encodding:
-    Channels 1-12: stores result of sensing. emission_matrix[0, 2, 2] means there is a rook at (2, 2)
+    Channels 1-12: stores result of sensing. emission_matrix[0, 2, 2] means there is a white rook at (2, 2)
 
-    Channel 13: emission_matrix[12, 1, 1] == 1 means that the opponent took a piece at this location
+    Channels 13-14: positions without piece types. Useful to know position of captured pieces
+    
+    Channel 15: positions of empty squares. Known from sensing and from moves
 
-    Channel 14: move requested from
-    Channel 15: move requested to
-
-    Channel 16: move actually taken from
-    Channel 17: move actually take to
-
-    Channel 18: if emission_matrix[17, 2, 2] == 1, it means the opponent took a piece at 2, 2
-
-    Channel 19: black or white.
+    Channel 16: black or white.
 
 
     :param white: are you white?
     :return: emission board with just white information written to it
     """
-    emission_matrix = np.zeros((18, 8, 8))
+    emission_matrix = np.zeros((16, 8, 8))
     emission_matrix[-1, :, :] = int(white)
     return emission_matrix
+
+    
 
 
 def get_row_col_from_num(loc):
@@ -123,7 +134,7 @@ def get_row_col_from_num(loc):
     return row, col
 
 
-def process_sense(sense_result, emission_matrix=np.zeros((18, 8, 8))):
+def process_sense(sense_result, emission_matrix=np.zeros((16, 8, 8))):
     """
     Result of sensing
 
@@ -139,6 +150,11 @@ def process_sense(sense_result, emission_matrix=np.zeros((18, 8, 8))):
             piece_pos = position_converter[str(piece)]
 
             emission_matrix[piece_pos, row, col] = 1
+            
+        else: # empty square
+            
+            row, col = get_row_col_from_num(loc)
+            emission_matrix[14, row, col] = 1
 
     return emission_matrix
 
@@ -331,3 +347,4 @@ def assert_truth_board_is_accurate(new_truth_board, truth_board):
             assert arg in truth_args  # can underestimate in the case of promotions
 
         assert len(truth_args) >= len(new_args)
+        
