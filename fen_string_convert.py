@@ -7,8 +7,10 @@ Created on Fri Nov  6 16:18:54 2020
 """
 
 import numpy as np
-
+import scipy.special
 # import sys
+import torch
+import chess
 
 position_converter = {'R': 0, 'N': 1, 'B': 2, 'Q': 3, 'K': 4, 'P': 5, 'r': 6, 'n': 7, 'b': 8, 'q': 9, 'k': 10, 'p': 11}
 
@@ -221,7 +223,7 @@ def get_truncated_board(truth_board):
 
 def get_truncated_board_short(truth_board, white = True):
     """
-    Returns the truth board in the following format. If wendell completes his method we can use this instead to train the RNN
+    Returns the truth board in the following format. If Florian completes his methods we can use this instead to train the RNN
 
     18 x 65.
     This is an alternate one hot encoding to the truth board. This one hot encoding is amenable to a softmax and allows
@@ -331,3 +333,65 @@ def assert_truth_board_is_accurate(new_truth_board, truth_board):
             assert arg in truth_args  # can underestimate in the case of promotions
 
         assert len(truth_args) >= len(new_args)
+
+def get_most_likely_truth_board(truncated_board: torch.Tensor):
+    """
+
+    :param truncated_board: raw output of neural network
+    :return:
+    """
+    if len(truncated_board.shape) == 3:
+        truncated_board = truncated_board[0]
+    elif len(truncated_board) != 2:
+        raise(Exception("Truncated board is wrong shape"))
+
+    softmax = torch.nn.functional.softmax(truncated_board, dim = 1).detach().cpu().numpy()
+    max_truncated_board = np.zeros(softmax.shape) # board with maximum probability. Use greedy heuristic
+
+    # loop greedily finds the most likely piece one at a time and prevents other pieces from being on that square
+    while True:
+        max_probs = softmax.max(axis=1)
+        max_piece = np.argmax(max_probs)
+        if max_probs[max_piece] == -1:
+            break
+        max_piece_pos = np.argmax(softmax[max_piece])
+
+        max_truncated_board[max_piece, max_piece_pos] = 1
+
+        softmax[max_piece,:] = -1  # cover up this row so we don't pick it again
+        softmax[:, max_piece_pos] = -1
+
+    return convert_truncated_to_truth(max_truncated_board)
+
+def convert_one_hot_to_board(one_hot_board):
+    """
+
+    :param one_hot_board:
+    :return:
+    """
+    board = chess.Board()
+    piece_map = board.piece_map()
+
+    string_to_piece_map = {} # maps string repr of pieces to chess.Piece objects
+    for key, val in piece_map.items():
+        string_to_piece_map[str(val)] = val
+
+    board.clear_board() # clear board
+
+    piece_str_dict =  {v: k for k, v in position_converter.items()}  # inverse if position convert
+
+    for channel_idx in range(one_hot_board.shape[0]):
+        channel = one_hot_board[channel_idx]
+        piece_str = piece_str_dict[channel_idx]
+        squares = np.argwhere(channel)
+        for row, col in squares:
+
+            # col = (loc - 1) % 8
+            # row = loc // 8
+            piece_loc = (7 - row) * 8 + col
+            board.set_piece_at(piece_loc, string_to_piece_map[piece_str])
+
+    board_one_hot_converted = convert_fen_string(board.fen())
+
+    assert np.all(board_one_hot_converted[:12, :, :] == one_hot_board)
+    return board

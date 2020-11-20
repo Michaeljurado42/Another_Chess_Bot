@@ -43,7 +43,6 @@ class BoardGuesserNet(nn.Module):
         :
         """
         conv_1_out = self.conv1(state)
-       # print("conv 1 out shape", conv_1_out.shape)
 
         relu_1 = self.relu1(conv_1_out)
 
@@ -73,25 +72,28 @@ class BoardGuesserNetOnline(nn.Module):
 
         """This could be a small backbone"""
         self.conv1 = torch.nn.Conv2d(18, 32, 3)
-
+        torch.nn.init.xavier_uniform(self.conv1.weight, gain=1)
         self.relu1 = torch.nn.LeakyReLU()
         self.pool1 = torch.nn.MaxPool2d(2)
 
         self.conv2 = torch.nn.Conv2d(32, 64, 2)
+        torch.nn.init.xavier_uniform(self.conv2.weight, gain=1)
         self.relu2 = torch.nn.LeakyReLU()
         self.pool2 = torch.nn.MaxPool2d(2)
 
         self.flatten = torch.nn.Flatten()
-
         # two hidden lstm states
-        self.lstm = torch.nn.LSTM(256, 256, 2)
+        self.lstm = torch.nn.LSTM(256, 256, 2, batch_first=True)
 
         # recast board to truth
         self.dense1 = torch.nn.Linear(256, 640)
+        torch.nn.init.xavier_uniform(self.dense1.weight, gain=1)
         self.relu3 = torch.nn.LeakyReLU()
 
-        self.dense2 = torch.nn.Linear(640, 12 * 8 * 8)
-        self.sigmoid1 = torch.nn.Sigmoid()  # we use a sigmoid because it has a range of 0 to 1
+        self.dense2 = torch.nn.Linear(640, 36 * 65)
+        # https://discuss.pytorch.org/t/do-i-need-to-use-softmax-before-nn-crossentropyloss/16739
+
+    #        self.softmax = torch.nn.Softmax(axis = 1)  # we use a sigmoid because it has a range of 0 to 1
 
     def forward(self, state, hidden=None):
         """
@@ -101,32 +103,39 @@ class BoardGuesserNetOnline(nn.Module):
         :return:
         """
 
+        """
+
+        :param state: <N, 19, 8, 8> tensor representing one game :return: <19, 36, 64> . For the encoding of the
+        output please see get_truncated_truth_board in fen_string_convert.py
+        :
+        """
         conv_1_out = self.conv1(state)
-       # print("conv 1 out shape", conv_1_out.shape)
 
         relu_1 = self.relu1(conv_1_out)
 
         conv_2_out = self.conv2(relu_1)
-       # print("conv 2 out shape", conv_2_out.shape)
 
         relu_2 = self.relu2(conv_2_out)
         pool_2_out = self.pool2(relu_2)
-       # print("pool_2_out shape", pool_2_out.shape)
 
         flatten_out = self.flatten(pool_2_out)
         flatten_out_batch_size_1 = torch.unsqueeze(flatten_out, 0)  # sequence length is now the number of games
-
-        if hidden is None:  # default hidden state is zero (is this bad)
-            output, (h_0, c_0) = self.lstm(flatten_out_batch_size_1)  # discard c_0 but we will definitely
+        if hidden is None:
+            output, (h_0, c_0) = self.lstm(
+                flatten_out_batch_size_1)  # discard c_0 but we will definitely need it when we deploy the model
         else:
-            output, (h_0, c_0) = self.lstm(flatten_out_batch_size_1, hidden)  # discard c_0 but we will definitely
+            output, (h_0, c_0) = self.lstm(
+                flatten_out_batch_size_1, hidden)  # discard c_0 but we will definitely need it when we deploy the model
+        remove_batch_dimension = output.squeeze(0)
 
-        dense1_out = self.dense1(flatten_out)
+        dense1_out = self.dense1(remove_batch_dimension)
         relu_3 = self.relu3(dense1_out)
 
         dense2_out = self.dense2(relu_3)
 
-        return dense2_out.reshape((state.shape[0], 12, 8, 8)), (h_0, c_0)  # 0 to 1
+        return dense2_out.reshape((state.shape[0], 36, 65)), (h_0, c_0)  # apparently no softmax needed https://discuss.pytorch.org/t/do-i-need-to-use-softmax-before-nn-crossentropyloss/16739
+
+
 
 
 

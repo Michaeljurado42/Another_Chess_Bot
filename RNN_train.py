@@ -33,14 +33,14 @@ guessNet_black = BoardGuesserNet()
 # Constants
 train_iterations = 100000
 validation_count = 50  # after every 20 games check validation score
-load_in_weights = False
+load_in_weights = True
 
 # decayed_learning_rate = learning_rate *
 #                        decay_rate ^ (global_step / decay_steps)
-decay_steps = 500
+decay_steps = 100
 decay_rate = .99
-initial_lr = .0001
-minimum_lr = .00001
+initial_lr = .00002
+minimum_lr = .000005
 
 # set up loss function and optimizer
 criterion = torch.nn.CrossEntropyLoss()
@@ -122,7 +122,7 @@ def create_loss_plot(train_loss_history, white):
     plt.clf()
     plt.close()
 
-def train_step(X_train_batch, y_train_batch, guessNet, optimizer):
+def train_step(X_train_batch, y_train_batch, guessNet, optimizer, train = True):
     """
     Returns loss
     :param X_train_batch:
@@ -140,8 +140,9 @@ def train_step(X_train_batch, y_train_batch, guessNet, optimizer):
     stacked_truth = torch.cat([i for i in y_train_batch], axis=0).argmax(1)
     loss = criterion(stacked_pred, stacked_truth)
 
-    loss.backward()
-    optimizer.step()
+    if train:
+        loss.backward()
+        optimizer.step()
     # magic
     return loss
 
@@ -237,8 +238,8 @@ for epoch in range(train_iterations):
             X_train_batch_white, y_train_batch_white, X_train_batch_black, y_train_batch_black = run_game()  # plays a game random versus random
 
             # Run training steps
-            loss_white = train_step(X_train_batch_white, y_train_batch_white, guessNet_white, optimizer1)
-            loss_black = train_step(X_train_batch_black, y_train_batch_black, guessNet_black, optimizer2)
+            loss_white = train_step(X_train_batch_white, y_train_batch_white, guessNet_white, optimizer1, train=False)
+            loss_black = train_step(X_train_batch_black, y_train_batch_black, guessNet_black, optimizer2, train=False)
 
             total_val_loss_white += loss_white
             total_val_loss_black += loss_black
