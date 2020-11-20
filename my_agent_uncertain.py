@@ -128,6 +128,7 @@ class AnotherChessBot(Player):
         pred_board = get_most_likely_truth_board(self.softmax_out)
 
         current_board = convert_one_hot_to_board(pred_board)
+        current_board.turn = self.color
         self.move_count += 1
         # whom: Run MCTS simulation for num_simulations and then choose the best move
         # Provide current_board (or what we believe to be the current board) to MCTS
