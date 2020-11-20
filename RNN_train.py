@@ -19,7 +19,11 @@ import matplotlib.pyplot as plt
 from collections import deque
 import sys
 from modified_play_game import play_game
+<<<<<<< Updated upstream
 from fen_string_convert import convert_truncated_to_truth
+=======
+
+>>>>>>> Stashed changes
 
 # # Board Guess
 
@@ -27,6 +31,7 @@ from fen_string_convert import convert_truncated_to_truth
 
 
 # set up Board Guesser Net
+<<<<<<< Updated upstream
 guessNet_white = BoardGuesserNet()
 guessNet_black = BoardGuesserNet()
 
@@ -47,18 +52,37 @@ criterion = torch.nn.CrossEntropyLoss()
 optimizer1 = optim.Adam(guessNet_white.parameters(), lr=initial_lr)
 
 optimizer2 = optim.Adam(guessNet_black.parameters(), lr=initial_lr)
+=======
+guessNet = BoardGuesserNet()
+
+#set up loss function and optimizer
+criterion = torch.nn.MSELoss()
+optimizer = optim.Adam(guessNet.parameters(), lr = .001)
+
+# Constants
+train_iterations = 100000
+validation_count  = 50 # after every 20 games check validation score
+load_in_weights = True
+
+>>>>>>> Stashed changes
 
 # # Definer helpers
 
 # In[3]:
 
 
+<<<<<<< Updated upstream
 def save_model(guessNet, white):
+=======
+
+def save_model(guessNet):
+>>>>>>> Stashed changes
     # definer helpers
     try:
         os.mkdir("rnn_model")
     except Exception as e:
         print(e)
+<<<<<<< Updated upstream
     if white:
         torch.save(guessNet.state_dict(), "white_rnn_model")
     else:
@@ -72,12 +96,21 @@ def load_model(guessNet, white):
         guessNet.load_state_dict(torch.load("black_rnn_model"))
 
 
+=======
+
+    torch.save(guessNet.state_dict(), "rnn_model")
+    
+def load_model(guessNet):
+    guessNet.load_state_dict(torch.load("rnn_model"))
+    
+>>>>>>> Stashed changes
 def run_game():
     """
     Returns X_train_batch, y_train_batch, which are both numpy arrays
     
     NOTE: Addit command to change which agent plays. (Must save data in specified format though)
     """
+<<<<<<< Updated upstream
     white_data, black_data = play_game("random_agent_save_obs", "random_agent_save_obs")
 
     white_sense_list, white_truth_board_list = white_data
@@ -266,4 +299,144 @@ for epoch in range(train_iterations):
         X_train_batch_white, y_train_batch_white, X_train_batch_black, y_train_batch_black = run_game()
         print("printing board for white")
         check_first_square(X_train_batch_white,guessNet_white)
+=======
+    start = time.time()
+    white_data, black_data = play_game("random_agent_save_obs", "random_agent_save_obs")
+    
+
+    player_sense_list, player_truth_board_list = white_data
+    
+    X_train_batch = np.array(player_sense_list)
+    y_train_batch = np.array(player_truth_board_list)
+    return X_train_batch, y_train_batch
+
+
+def record_game_loss(pred_list, y_train_batch):
+    """
+    Record mse between truth board and predictions. 
+    THis is for validation
+    """
+    if isinstance(pred_list, torch.Tensor):
+        y_train_batch = y_train_batch.detach().cpu().numpy()
+        pred_list = pred_list.detach().cpu().numpy()
+    return np.sum((pred_list - y_train_batch)**2)
+
+
+
+    
+def create_loss_plot(train_loss_history):
+    plt.figure()
+
+    x_axis = (np.arange(len(train_loss_history)))
+    
+    plt.plot(x_axis, train_loss_history, label = "train_loss")
+    
+    plt.legend(loc="upper left")
+    plt.ylabel("MSE")
+    plt.xlabel("epochs")    
+    try:
+        plt.savefig("rnn_loss.png")
+    except Exception as e:
+        print("Permission denied saving loss")
+        
+    plt.cla()
+    plt.clf()
+    plt.close()
+    
+    
+
+
+# # Training Step
+
+# In[9]:
+
+
+if load_in_weights:
+    load_model(guessNet)
+    # TODO
+
+# contains train and test lost history
+train_loss_history = []
+test_loss_history = []
+plt.figure()
+
+train_loss_queue = deque(maxlen = 100)  # holds a temporary queue of train lost
+smallestLoss = sys.maxsize
+lastImprovement = 0
+for epoch in range(train_iterations):
+    X_train_batch, y_train_batch = run_game() # plays a game random versus random
+
+    X_train_batch = torch.Tensor(X_train_batch)
+    # training step
+    pred_labels = guessNet(X_train_batch)
+    y_train_batch = torch.Tensor(y_train_batch)
+    loss = criterion(pred_labels, y_train_batch)
+
+    loss.backward()
+    optimizer.step() # magic    
+    train_loss_queue.append(loss.detach().cpu().numpy())
+    
+    loss = np.mean(train_loss_queue)
+    train_loss_history.append(np.mean(train_loss_queue))
+
+    if (epoch +1) % 5 == 0:  # save loss plot every 5 steps
+        create_loss_plot(train_loss_history)
+        
+    # run a validation every 100 steps
+    if (epoch+ 1) % 100 == 0:
+        print("validation time")
+        total_val_loss = 0
+        for i in range(validation_count):
+            X_train_batch, y_train_batch = run_game() # plays a game random versus random
+            X_train_batch = torch.Tensor(X_train_batch)
+            
+            # training step
+            pred_labels = guessNet(X_train_batch)
+            y_train_batch = torch.Tensor(y_train_batch)
+            total_val_loss += criterion(pred_labels, y_train_batch)   
+        val_loss = total_val_loss/ validation_count
+        
+        if val_loss < smallestLoss:
+            print("better model found with loss", val_loss)
+            save_model(guessNet)
+            smallestLoss =  val_loss
+    
+    # decay learning rate
+    if (epoch+1) % 200 == 0:
+        for param_group in optimizer.param_groups:
+                param_group['lr'] *= .98     
+                param_group['lr'] = max(.0001, param_group['lr'])
+        print("decaying learning rate to", param_group["lr"])
+        
+    # print out pred_board[0]
+    if (epoch+1) % 100 == 0:
+        print("pred board for first time step")
+        index = 0
+        for channel in [np.argwhere(i > .5) for i in pred_labels[0].detach().numpy()]:
+            print("active arguments in channel", index)
+            print(channel)
+            index += 1
+    
+        
+
+            
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+>>>>>>> Stashed changes
 

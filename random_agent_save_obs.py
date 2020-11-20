@@ -144,13 +144,21 @@ class Random(Player):
             self.emission_matrix[13 - int(self.white), to_row, to_col] = 1
             
             if (from_row == to_row):
-                for i in range(from_col + 1, to_col):
-                    self.emission_matrix[14,from_row,i] = 1 #empty squares
+                if (from_col <= to_col):
+                    for i in range(from_col + 1, to_col):
+                        self.emission_matrix[14,from_row,i] = 1 #empty squares
+                else:
+                    for i in range(to_col +1, from_col):
+                        self.emission_matrix[14,from_row,i] = 1 #empty squares
                     
             if (from_col == to_col):
-                for i in range(from_row + 1, to_row):
-                    self.emission_matrix[14,i,from_col] = 1 #empty squares
-            
+                if (from_col <= to_col):
+                    for i in range(from_row + 1, to_row):
+                        self.emission_matrix[14,i,from_col] = 1 #empty squares
+                else:
+                    for i in range(to_row + 1, from_row):
+                        self.emission_matrix[14,i,from_col] = 1 #empty squares
+                
 
 
         #possible issue: I am not considering a capture as an observation
