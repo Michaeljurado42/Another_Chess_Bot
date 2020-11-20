@@ -71,8 +71,8 @@ def test_moves(board):
 
     for move in moves:
         actions = mcts_game.getValidMoves(moves=[move])
-        actions[-1] = 0
-        the_move = mcts_game.make_move(actions)
+        action = np.nonzero(actions)[0][0]
+        the_move = mcts_game.make_move(action)
 
         move_str = move.uci()
         if len(move_str) == 5 and move_str[4] == 'q':
@@ -133,8 +133,7 @@ gameapi = GameAPI(board)
 assert(gameapi.board.fen() == fen)
 
 # The null move is where the last element is a 1
-action = np.array([0] * 4673)
-action[-1] = 1
+action = gameapi.getActionSize() - 1
 
 move = gameapi.make_move(action)
 
