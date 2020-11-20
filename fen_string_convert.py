@@ -122,7 +122,6 @@ def create_blank_emission_matrix(white=True):
     emission_matrix[-1, :, :] = int(white)
     return emission_matrix
 
-    
 
 
 def get_row_col_from_num(loc):
@@ -135,7 +134,7 @@ def get_row_col_from_num(loc):
     row = loc // 8
     return row, col
 
-print(get_row_col_from_num(11))
+#print(get_row_col_from_num(11))
 
 
 def process_sense(sense_result, emission_matrix=np.zeros((16, 8, 8))):

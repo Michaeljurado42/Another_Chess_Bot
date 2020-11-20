@@ -16,6 +16,7 @@ from player import Player
 from fen_string_convert import process_sense, convert_fen_string, get_row_col_from_num, create_blank_emission_matrix, get_truncated_board, start_bookkeeping, find_piece_type
 
 import numpy as np
+import sys
 
 
 
@@ -47,6 +48,7 @@ class Random(Player):
         :param captured_square: chess.Square - position where your piece was captured
         """
         self.emission_matrix[-1, :, :] = int(self.white)
+        self.emission_matrix[:12] = np.copy(self.bookkeeping)
         
         if captured_piece:
             row, col = get_row_col_from_num(captured_square)
@@ -59,8 +61,11 @@ class Random(Player):
         dic = {True: "White", False: "Black"}
         print("{} pieces: ".format(dic[self.white]))
         
-        for i in range(12):
-            print(self.bookkeeping[i,:,:])
+        np.set_printoptions(threshold = sys.maxsize)
+        print("Bookkeeping")
+        print(self.bookkeeping)
+        print("Emission_matrix")
+        print(self.emission_matrix)
             
 
         # self.sense_list.append(self.emission_matrix)  # could contain no updates
