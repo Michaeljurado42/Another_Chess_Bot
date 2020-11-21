@@ -7,7 +7,7 @@ Created on Fri Nov  6 16:18:54 2020
 """
 
 import numpy as np
-import scipy.special
+
 # import sys
 import torch
 import chess
@@ -91,27 +91,22 @@ def create_blank_emission_matrix(white=True):
     Purpose of this is to create a blank emission matrix. Only information that it stores is the side of the board
 
     Current emission Encodding:
-    Channels 1-12: stores result of sensing. emission_matrix[0, 2, 2] means there is a rook at (2, 2)
+    Channels 1-12: stores result of sensing. emission_matrix[0, 2, 2] means there is a white rook at (2, 2)
 
-    Channel 13: emission_matrix[12, 1, 1] == 1 means that the opponent took a piece at this location
+    Channels 13-14: positions without piece types. Useful to know position of captured pieces
 
-    Channel 14: move requested from
-    Channel 15: move requested to
+    Channel 15: positions of empty squares. Known from sensing and from moves
 
-    Channel 16: move actually taken from
-    Channel 17: move actually take to
-
-    Channel 18: if emission_matrix[17, 2, 2] == 1, it means the opponent took a piece at 2, 2
-
-    Channel 19: black or white.
+    Channel 16: black or white.
 
 
     :param white: are you white?
     :return: emission board with just white information written to it
     """
-    emission_matrix = np.zeros((18, 8, 8))
+    emission_matrix = np.zeros((16, 8, 8))
     emission_matrix[-1, :, :] = int(white)
     return emission_matrix
+
 
 
 def get_row_col_from_num(loc):
@@ -120,12 +115,14 @@ def get_row_col_from_num(loc):
     :param loc: board position as number
     :return: row, col of board
     """
-    col = (loc - 1) % 8
+    col = (loc) % 8 # it was loc-1 before
     row = loc // 8
     return row, col
 
+#print(get_row_col_from_num(11))
 
-def process_sense(sense_result, emission_matrix=np.zeros((18, 8, 8))):
+
+def process_sense(sense_result, emission_matrix=np.zeros((16, 8, 8))):
     """
     Result of sensing
 
@@ -141,6 +138,11 @@ def process_sense(sense_result, emission_matrix=np.zeros((18, 8, 8))):
             piece_pos = position_converter[str(piece)]
 
             emission_matrix[piece_pos, row, col] = 1
+
+        else: # empty square
+
+            row, col = get_row_col_from_num(loc)
+            emission_matrix[14, row, col] = 1
 
     return emission_matrix
 
