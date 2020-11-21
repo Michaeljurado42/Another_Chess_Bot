@@ -223,6 +223,23 @@ def get_truncated_board(truth_board):
     return output
 
 
+# np.set_printoptions(threshold= sys.maxsize)
+# print(convert_fen_string("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"))
+
+def start_bookkeeping(white=True):
+    bookkeeping = np.zeros((12, 8, 8))
+    if (white):
+        pieces = [(0, 0, 0), (0, 0, 7), (1, 0, 1), (1, 0, 6), (2, 0, 2), (2, 0, 5), (3, 0, 3), (4, 0, 4), (5, 1, 0),
+                  (5, 1, 1), (5, 1, 2), (5, 1, 3), (5, 1, 4), (5, 1, 5), (5, 1, 6), (5, 1, 7)]
+    else:
+        pieces = [(6, 7, 0), (6, 7, 7), (7, 7, 1), (7, 7, 6), (8, 7, 2), (8, 7, 5), (9, 7, 3), (10, 7, 4), (11, 6, 0),
+                  (11, 6, 1), (11, 6, 2), (11, 6, 3), (11, 6, 4), (11, 6, 5), (11, 6, 6), (11, 6, 7)]
+
+    for piece in pieces:
+        bookkeeping[piece] = 1
+
+    return bookkeeping
+
 def get_truncated_board_short(truth_board, white = True):
     """
     Returns the truth board in the following format. If Florian completes his methods we can use this instead to train the RNN
@@ -335,6 +352,12 @@ def assert_truth_board_is_accurate(new_truth_board, truth_board):
             assert arg in truth_args  # can underestimate in the case of promotions
 
         assert len(truth_args) >= len(new_args)
+
+def find_piece_type(bookkeeping, row, column):
+    for i in range (12):
+        if (bookkeeping[i,row,column] == 1):
+            return i
+    raise Exception("Sorry, that square does not have any piece on it")
 
 def get_most_likely_truth_board(truncated_board: torch.Tensor):
     """
