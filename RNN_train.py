@@ -33,7 +33,7 @@ guessNet_black = BoardGuesserNet()
 # Constants
 train_iterations = 100000
 validation_count = 50  # after every 20 games check validation score
-load_in_weights = True
+load_in_weights = False
 
 # decayed_learning_rate = learning_rate *
 #                        decay_rate ^ (global_step / decay_steps)

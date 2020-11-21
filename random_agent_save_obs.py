@@ -13,7 +13,7 @@ import random
 import chess
 from player import Player
 
-from fen_string_convert import process_sense, convert_fen_string, get_row_col_from_num, create_blank_emission_matrix, get_truncated_board, start_bookkeeping, find_piece_type
+from fen_string_convert import process_sense, convert_fen_string, get_row_col_from_num, create_blank_emission_matrix, get_truncated_board_short, start_bookkeeping, find_piece_type
 
 import numpy as np
 import sys
@@ -59,12 +59,12 @@ class Random(Player):
             self.emission_matrix[12 + int(self.white),row, col] = 1
             
         dic = {True: "White", False: "Black"}
-        print("{} pieces: ".format(dic[self.white]))
-        
+        # print("{} pieces: ".format(dic[self.white]))
+        #
         np.set_printoptions(threshold = sys.maxsize)
-        print("Bookkeeping")
+        # print("Bookkeeping")
         print(self.bookkeeping)
-        print("Emission_matrix")
+        # print("Emission_matrix")
         print(self.emission_matrix)
             
 
@@ -108,7 +108,7 @@ class Random(Player):
 
         # collect dataset
         self.sense_list.append(self.emission_matrix)
-        self.truth_board_list.append(get_truncated_board(self.board))
+        self.truth_board_list.append(get_truncated_board_short(self.board))
         pass
 
     def choose_move(self, possible_moves, seconds_left):

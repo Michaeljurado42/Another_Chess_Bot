@@ -353,11 +353,19 @@ def assert_truth_board_is_accurate(new_truth_board, truth_board):
 
         assert len(truth_args) >= len(new_args)
 
-def find_piece_type(bookkeeping, row, column):
+def find_piece_type(bookkeeping, row: int, column: int):
+    """
+    It looks at the bookkeeping, the row and the column, and it tells you which piece is on that square
+
+    :param bookkeeping:
+    :param row:
+    :param column:
+    :return:
+    """
     for i in range (12):
         if (bookkeeping[i,row,column] == 1):
             return i
-    raise Exception("Sorry, that square does not have any piece on it")
+    raise Exception("Sorry, that square does not have any piece on it")  #book
 
 def get_most_likely_truth_board(truncated_board: torch.Tensor):
     """
