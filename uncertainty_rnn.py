@@ -12,7 +12,7 @@ class BoardGuesserNet(nn.Module):
         super(BoardGuesserNet, self).__init__()
 
         """This could be a small backbone"""
-        self.conv1 = torch.nn.Conv2d(18, 32, 3)
+        self.conv1 = torch.nn.Conv2d(16, 32, 3)
         torch.nn.init.xavier_uniform(self.conv1.weight, gain = 1)
         self.relu1 = torch.nn.LeakyReLU()
         self.pool1 = torch.nn.MaxPool2d(2)
@@ -31,7 +31,7 @@ class BoardGuesserNet(nn.Module):
         torch.nn.init.xavier_uniform(self.dense1.weight, gain = 1)
         self.relu3 = torch.nn.LeakyReLU()
 
-        self.dense2 = torch.nn.Linear(640, 36 * 65)
+        self.dense2 = torch.nn.Linear(640, 18 * 65)
         # https://discuss.pytorch.org/t/do-i-need-to-use-softmax-before-nn-crossentropyloss/16739
 #        self.softmax = torch.nn.Softmax(axis = 1)  # we use a sigmoid because it has a range of 0 to 1
 
@@ -62,7 +62,7 @@ class BoardGuesserNet(nn.Module):
 
         dense2_out = self.dense2(relu_3)
 
-        return dense2_out.reshape((state.shape[0], 36, 65))  # apparently no softmax needed https://discuss.pytorch.org/t/do-i-need-to-use-softmax-before-nn-crossentropyloss/16739
+        return dense2_out.reshape((state.shape[0], 18, 65))  # apparently no softmax needed https://discuss.pytorch.org/t/do-i-need-to-use-softmax-before-nn-crossentropyloss/16739
 
 
 class BoardGuesserNetOnline(nn.Module):
@@ -71,7 +71,7 @@ class BoardGuesserNetOnline(nn.Module):
         super(BoardGuesserNetOnline, self).__init__()
 
         """This could be a small backbone"""
-        self.conv1 = torch.nn.Conv2d(18, 32, 3)
+        self.conv1 = torch.nn.Conv2d(16, 32, 3)
         torch.nn.init.xavier_uniform(self.conv1.weight, gain=1)
         self.relu1 = torch.nn.LeakyReLU()
         self.pool1 = torch.nn.MaxPool2d(2)
@@ -90,7 +90,7 @@ class BoardGuesserNetOnline(nn.Module):
         torch.nn.init.xavier_uniform(self.dense1.weight, gain=1)
         self.relu3 = torch.nn.LeakyReLU()
 
-        self.dense2 = torch.nn.Linear(640, 36 * 65)
+        self.dense2 = torch.nn.Linear(640, 18 * 65)
         # https://discuss.pytorch.org/t/do-i-need-to-use-softmax-before-nn-crossentropyloss/16739
 
     #        self.softmax = torch.nn.Softmax(axis = 1)  # we use a sigmoid because it has a range of 0 to 1
@@ -133,65 +133,10 @@ class BoardGuesserNetOnline(nn.Module):
 
         dense2_out = self.dense2(relu_3)
 
-        return dense2_out.reshape((state.shape[0], 36, 65)), (h_0, c_0)  # apparently no softmax needed https://discuss.pytorch.org/t/do-i-need-to-use-softmax-before-nn-crossentropyloss/16739
+        return dense2_out.reshape((state.shape[0], 18, 65)), (h_0, c_0)  # apparently no softmax needed https://discuss.pytorch.org/t/do-i-need-to-use-softmax-before-nn-crossentropyloss/16739
 
 
 
-
-
-class BoardGuesserNetSlim(nn.Module):
-    """
-    Network that we can only use when we are predicting just the opponents pieces.
-    """
-
-    def __init__(self):
-        super(BoardGuesserNet, self).__init__()
-
-        """This could be a small backbone"""
-        self.conv1 = torch.nn.Conv2d(18, 32, 3)  # use modified emission matrix instead here
-        torch.nn.init.xavier_uniform(self.conv1.weight, gain = 1)
-        self.relu1 = torch.nn.LeakyReLU()
-        self.pool1 = torch.nn.MaxPool2d(2)
-
-        self.conv2 = torch.nn.Conv2d(32, 64, 2)
-        torch.nn.init.xavier_uniform(self.conv2.weight, gain = 1)
-        self.relu2 = torch.nn.LeakyReLU()
-        self.pool2 = torch.nn.MaxPool2d(2)
-
-        self.flatten = torch.nn.Flatten()
-        # two hidden lstm states
-        self.lstm = torch.nn.LSTM(256, 256, 2, batch_first=True)
-
-        # recast board to truth
-        self.dense1 = torch.nn.Linear(256, 640)
-        torch.nn.init.xavier_uniform(self.dense1.weight, gain = 1)
-        self.relu3 = torch.nn.LeakyReLU()
-
-        self.truth_dense = torch.nn.Linear(640, 18 * 8 * 8)
-
-#        self.
-    def forward(self, state):
-        conv_1_out = self.conv1(state)
-
-        relu_1 = self.relu1(conv_1_out)
-
-        conv_2_out = self.conv2(relu_1)
-
-        relu_2 = self.relu2(conv_2_out)
-        pool_2_out = self.pool2(relu_2)
-
-        flatten_out = self.flatten(pool_2_out)
-        flatten_out_batch_size_1 = torch.unsqueeze(flatten_out, 0)  # sequence length is now the number of games
-        h_0, c_0 = self.lstm(
-            flatten_out_batch_size_1)  # discard c_0 but we will definitely need it when we deploy the model
-        remove_batch_dimension = h_0.squeeze(0)
-
-        dense1_out = self.dense1(remove_batch_dimension)
-        relu_3 = self.relu3(dense1_out)
-
-        dense2_out = self.dense2(relu_3)
-
-        return dense2_out.reshape((state.shape[0], 18, 8, 8))  # 0 to 1
 
 
 

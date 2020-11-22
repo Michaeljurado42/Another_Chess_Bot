@@ -7,7 +7,7 @@ Created on Fri Nov  6 16:18:54 2020
 """
 
 import numpy as np
-import scipy.special
+
 # import sys
 import torch
 import chess
@@ -80,6 +80,43 @@ def convert_fen_string(fen):
     # Values: 12 for positions, 1 for next to play, 2 for white castling, 2 for black castling, 1 for en passant, 1 for halfmove_clock, 1 for fullmove_number
     return output
 
+# truncated one hot encoding of the fen string / reverted compared to the not truncated one hot encoding
+def convert_fen_string_truncated(fen):
+    output = np.zeros((12, 8, 8))
+
+    split_fen = fen.split(" ")
+
+    if (len(split_fen) != 1):
+        print("Error: some fields in the FEN string are missing.")
+        return
+
+        ############################ Positions ############################
+    # first dimension is for pieces. Begin with white pieces, pawn, knight, bishop, rook, queen, king. Example: blackte bishop = position 8
+    # second dimension is the chess board row. So, from 1 to 8. (reverse ordering compared to fen string)
+    # third dimension is the chess board column, so from a to h
+    # position_converter = {'R': 0, 'N': 1, 'B': 2, 'Q': 3, 'K': 4, 'P': 5, 'r': 6, 'n': 7, 'b': 8, 'q': 9, 'k': 10, 'p': 11}
+
+    index_row = 7
+    index_column = 0
+    for value in split_fen[0]:
+
+        if (value == '/'):
+            index_column = 0
+            index_row -= 1
+            continue
+
+        if (value.isdigit()):
+            index_column += int(value)
+        else:
+            index_piece = position_converter[value]
+            output[index_piece, index_row, index_column] = 1
+            index_column += 1
+
+
+    # Dimensions: 12x8x8
+    # Values: 12 for positions
+    return output
+
 
 # np.set_printoptions(threshold= sys.maxsize)
 # print(convert_fen_string("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"))
@@ -91,27 +128,22 @@ def create_blank_emission_matrix(white=True):
     Purpose of this is to create a blank emission matrix. Only information that it stores is the side of the board
 
     Current emission Encodding:
-    Channels 1-12: stores result of sensing. emission_matrix[0, 2, 2] means there is a rook at (2, 2)
+    Channels 1-12: stores result of sensing. emission_matrix[0, 2, 2] means there is a white rook at (2, 2)
 
-    Channel 13: emission_matrix[12, 1, 1] == 1 means that the opponent took a piece at this location
+    Channels 13-14: positions without piece types. Useful to know position of captured pieces
 
-    Channel 14: move requested from
-    Channel 15: move requested to
+    Channel 15: positions of empty squares. Known from sensing and from moves
 
-    Channel 16: move actually taken from
-    Channel 17: move actually take to
-
-    Channel 18: if emission_matrix[17, 2, 2] == 1, it means the opponent took a piece at 2, 2
-
-    Channel 19: black or white.
+    Channel 16: black or white.
 
 
     :param white: are you white?
     :return: emission board with just white information written to it
     """
-    emission_matrix = np.zeros((18, 8, 8))
+    emission_matrix = np.zeros((16, 8, 8))
     emission_matrix[-1, :, :] = int(white)
     return emission_matrix
+
 
 
 def get_row_col_from_num(loc):
@@ -120,12 +152,14 @@ def get_row_col_from_num(loc):
     :param loc: board position as number
     :return: row, col of board
     """
-    col = (loc - 1) % 8
+    col = (loc) % 8 # it was loc-1 before
     row = loc // 8
     return row, col
 
+#print(get_row_col_from_num(11))
 
-def process_sense(sense_result, emission_matrix=np.zeros((18, 8, 8))):
+
+def process_sense(sense_result, emission_matrix=np.zeros((16, 8, 8))):
     """
     Result of sensing
 
@@ -141,6 +175,11 @@ def process_sense(sense_result, emission_matrix=np.zeros((18, 8, 8))):
             piece_pos = position_converter[str(piece)]
 
             emission_matrix[piece_pos, row, col] = 1
+
+        else: # empty square
+
+            row, col = get_row_col_from_num(loc)
+            emission_matrix[14, row, col] = 1
 
     return emission_matrix
 
@@ -220,6 +259,23 @@ def get_truncated_board(truth_board):
 #    assert_truth_board_is_accurate(new_truth_board, raw_truth_board)
     return output
 
+
+# np.set_printoptions(threshold= sys.maxsize)
+# print(convert_fen_strinet("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"))
+
+def start_bookkeeping(white=True):
+    bookkeeping = np.zeros((12, 8, 8))
+    if (white):
+        pieces = [(0, 0, 0), (0, 0, 7), (1, 0, 1), (1, 0, 6), (2, 0, 2), (2, 0, 5), (3, 0, 3), (4, 0, 4), (5, 1, 0),
+                  (5, 1, 1), (5, 1, 2), (5, 1, 3), (5, 1, 4), (5, 1, 5), (5, 1, 6), (5, 1, 7)]
+    else:
+        pieces = [(6, 7, 0), (6, 7, 7), (7, 7, 1), (7, 7, 6), (8, 7, 2), (8, 7, 5), (9, 7, 3), (10, 7, 4), (11, 6, 0),
+                  (11, 6, 1), (11, 6, 2), (11, 6, 3), (11, 6, 4), (11, 6, 5), (11, 6, 6), (11, 6, 7)]
+
+    for piece in pieces:
+        bookkeeping[piece] = 1
+
+    return bookkeeping
 
 def get_truncated_board_short(truth_board, white = True):
     """
@@ -334,6 +390,21 @@ def assert_truth_board_is_accurate(new_truth_board, truth_board):
 
         assert len(truth_args) >= len(new_args)
 
+def find_piece_type(bookkeeping, row: int, column: int):
+    """
+    It looks at the bookkeeping, the row and the column, and it tells you which piece is on that square
+
+    :param bookkeeping:
+    :param row:
+    :param column:
+    :return:
+    """
+    for i in range (12):
+        if (bookkeeping[i,row,column] == 1):
+            return i
+        
+    raise Exception("Sorry, that square does not have any piece on it")  #book
+
 def get_most_likely_truth_board(truncated_board: torch.Tensor):
     """
 
@@ -395,3 +466,23 @@ def convert_one_hot_to_board(one_hot_board):
 
     assert np.all(board_one_hot_converted[:12, :, :] == one_hot_board)
     return board
+
+def assert_bookkeeping_is_accurate(bookkeeping, board, white):
+    fen = board.board_fen()
+    matrix = convert_fen_string_truncated(fen)
+    if white: 
+        if np.array_equal(matrix[:6], bookkeeping[:6]):
+            return True
+    else:
+        if np.array_equal(matrix[6:12], bookkeeping[6:12]):
+            return True
+        
+    return False
+
+def piece_type_converter(piece_type, white):
+    dic = {1: 5, 2: 1, 3: 2, 4: 0, 5: 3, 6: 4}
+    output = dic[piece_type]
+    if white:
+        return output
+    else:
+        return (output + 6)

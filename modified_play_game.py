@@ -41,8 +41,8 @@ def play_local_game(white_player, black_player, player_names):
     #     white_player.handle_game_start(chess.WHITE,  white=True)
     #     black_player.handle_game_start(chess.BLACK,  white=False)
     # else:
-    white_player.handle_game_start(chess.WHITE, game.truth_board, white=True)
-    black_player.handle_game_start(chess.BLACK, game.truth_board, white=False)
+    white_player.handle_game_start(chess.WHITE, game.truth_board)
+    black_player.handle_game_start(chess.BLACK, game.truth_board)
 
     game.start()
 
