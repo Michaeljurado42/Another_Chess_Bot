@@ -80,6 +80,43 @@ def convert_fen_string(fen):
     # Values: 12 for positions, 1 for next to play, 2 for white castling, 2 for black castling, 1 for en passant, 1 for halfmove_clock, 1 for fullmove_number
     return output
 
+# truncated one hot encoding of the fen string / reverted compared to the not truncated one hot encoding
+def convert_fen_string_truncated(fen):
+    output = np.zeros((12, 8, 8))
+
+    split_fen = fen.split(" ")
+
+    if (len(split_fen) != 1):
+        print("Error: some fields in the FEN string are missing.")
+        return
+
+        ############################ Positions ############################
+    # first dimension is for pieces. Begin with white pieces, pawn, knight, bishop, rook, queen, king. Example: blackte bishop = position 8
+    # second dimension is the chess board row. So, from 1 to 8. (reverse ordering compared to fen string)
+    # third dimension is the chess board column, so from a to h
+    # position_converter = {'R': 0, 'N': 1, 'B': 2, 'Q': 3, 'K': 4, 'P': 5, 'r': 6, 'n': 7, 'b': 8, 'q': 9, 'k': 10, 'p': 11}
+
+    index_row = 7
+    index_column = 0
+    for value in split_fen[0]:
+
+        if (value == '/'):
+            index_column = 0
+            index_row -= 1
+            continue
+
+        if (value.isdigit()):
+            index_column += int(value)
+        else:
+            index_piece = position_converter[value]
+            output[index_piece, index_row, index_column] = 1
+            index_column += 1
+
+
+    # Dimensions: 12x8x8
+    # Values: 12 for positions
+    return output
+
 
 # np.set_printoptions(threshold= sys.maxsize)
 # print(convert_fen_string("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"))
@@ -224,7 +261,7 @@ def get_truncated_board(truth_board):
 
 
 # np.set_printoptions(threshold= sys.maxsize)
-# print(convert_fen_string("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"))
+# print(convert_fen_strinet("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"))
 
 def start_bookkeeping(white=True):
     bookkeeping = np.zeros((12, 8, 8))
@@ -365,6 +402,7 @@ def find_piece_type(bookkeeping, row: int, column: int):
     for i in range (12):
         if (bookkeeping[i,row,column] == 1):
             return i
+        
     raise Exception("Sorry, that square does not have any piece on it")  #book
 
 def get_most_likely_truth_board(truncated_board: torch.Tensor):
@@ -428,3 +466,23 @@ def convert_one_hot_to_board(one_hot_board):
 
     assert np.all(board_one_hot_converted[:12, :, :] == one_hot_board)
     return board
+
+def assert_bookkeeping_is_accurate(bookkeeping, board, white):
+    fen = board.board_fen()
+    matrix = convert_fen_string_truncated(fen)
+    if white: 
+        if np.array_equal(matrix[:6], bookkeeping[:6]):
+            return True
+    else:
+        if np.array_equal(matrix[6:12], bookkeeping[6:12]):
+            return True
+        
+    return False
+
+def piece_type_converter(piece_type, white):
+    dic = {1: 5, 2: 1, 3: 2, 4: 0, 5: 3, 6: 4}
+    output = dic[piece_type]
+    if white:
+        return output
+    else:
+        return (output + 6)
