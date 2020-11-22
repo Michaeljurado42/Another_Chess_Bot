@@ -149,12 +149,21 @@ class Random(Player):
         if taken_move != None:
             from_row, from_col = get_row_col_from_num(taken_move.from_square)
             to_row, to_col = get_row_col_from_num(taken_move.to_square)
-            piece_type = find_piece_type(self.bookkeeping,from_row,from_col)
-            self.bookkeeping[piece_type, from_row, from_col] = 0
-            self.bookkeeping[piece_type, to_row, to_col] = 1
             
+            piece_type = find_piece_type(self.bookkeeping,from_row,from_col)
+            
+            
+            self.bookkeeping[piece_type, from_row, from_col] = 0
             self.emission_matrix[piece_type, from_row, from_col] = 0
-            self.emission_matrix[piece_type, to_row, to_col] = 1
+            
+            if (taken_move.promotion == None):
+                self.bookkeeping[piece_type, to_row, to_col] = 1
+                self.emission_matrix[piece_type, to_row, to_col] = 1
+            else:
+                piece_type = taken_move.promotion
+                self.bookkeeping[piece_type, to_row, to_col] = 1
+                self.emission_matrix[piece_type, to_row, to_col] = 1
+            
             self.emission_matrix[13 - int(self.white), from_row, from_col] = 0
             self.emission_matrix[13 - int(self.white), to_row, to_col] = 1
             
