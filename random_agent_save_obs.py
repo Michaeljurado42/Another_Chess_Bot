@@ -13,11 +13,11 @@ import random
 import chess
 from player import Player
 
-from fen_string_convert import process_sense, convert_fen_string, get_row_col_from_num, create_blank_emission_matrix, get_truncated_board_short, start_bookkeeping, find_piece_type
+from fen_string_convert import piece_type_converter, assert_bookkeeping_is_accurate, process_sense, convert_fen_string, convert_fen_string_truncated, get_row_col_from_num, create_blank_emission_matrix, get_truncated_board_short, start_bookkeeping, find_piece_type
 
 import numpy as np
 import sys
-
+#import pdb
 
 
 class Random(Player):
@@ -63,9 +63,10 @@ class Random(Player):
         #
         np.set_printoptions(threshold = sys.maxsize)
         # print("Bookkeeping")
-        print(self.bookkeeping)
+        #print(self.bookkeeping)
         # print("Emission_matrix")
-        print(self.emission_matrix)
+        #print(self.emission_matrix)
+        
             
 
         # self.sense_list.append(self.emission_matrix)  # could contain no updates
@@ -144,46 +145,142 @@ class Random(Player):
         :param reason: String -- description of the result from trying to make requested_move
         :param captured_piece: bool -- true if you captured your opponents piece
         :param captured_square: chess.Square -- position where you captured the piece
-        """
-
+        """                    
+        
         if taken_move != None:
-            from_row, from_col = get_row_col_from_num(taken_move.from_square)
-            to_row, to_col = get_row_col_from_num(taken_move.to_square)
             
-            piece_type = find_piece_type(self.bookkeeping,from_row,from_col)
+            copy_board = self.board.copy()
+            copy_board.pop()
+            if copy_board.is_castling(taken_move):
             
-            
-            self.bookkeeping[piece_type, from_row, from_col] = 0
-            self.emission_matrix[piece_type, from_row, from_col] = 0
-            
-            if (taken_move.promotion == None):
-                self.bookkeeping[piece_type, to_row, to_col] = 1
-                self.emission_matrix[piece_type, to_row, to_col] = 1
-            else:
-                piece_type = taken_move.promotion
-                self.bookkeeping[piece_type, to_row, to_col] = 1
-                self.emission_matrix[piece_type, to_row, to_col] = 1
-            
-            self.emission_matrix[13 - int(self.white), from_row, from_col] = 0
-            self.emission_matrix[13 - int(self.white), to_row, to_col] = 1
-            
-            if (from_row == to_row):
-                if (from_col <= to_col):
-                    for i in range(from_col + 1, to_col):
-                        self.emission_matrix[14,from_row,i] = 1 #empty squares
-                else:
-                    for i in range(to_col +1, from_col):
-                        self.emission_matrix[14,from_row,i] = 1 #empty squares
+                if copy_board.is_kingside_castling(taken_move):
                     
-            if (from_col == to_col):
-                if (from_col <= to_col):
-                    for i in range(from_row + 1, to_row):
-                        self.emission_matrix[14,i,from_col] = 1 #empty squares
+                    if self.white == True:
+                        
+                        self.bookkeeping[4,0,4] = 0
+                        self.emission_matrix[4,0,4] = 0
+                        self.bookkeeping[4,0,6] = 1
+                        self.emission_matrix[4,0,6] = 1
+                        self.bookkeeping[0,0,7] = 0
+                        self.emission_matrix[0,0,7] = 0
+                        self.bookkeeping[0,0,5] = 1
+                        self.emission_matrix[0,0,5] = 1
+                        self.emission_matrix[12, 0, 4] = 0 #undefined pieces
+                        self.emission_matrix[12, 0, 7] = 0
+                        self.emission_matrix[12, 0, 5] = 1
+                        self.emission_matrix[12, 0, 6] = 1
+                        self.emission_matrix[14,0,4] = 1 #empty squares
+                        self.emission_matrix[14,0,7] = 1
+                        
+                    else:
+                        
+                        self.bookkeeping[10,7,4] = 0
+                        self.emission_matrix[10,7,4] = 0
+                        self.bookkeeping[10,7,6] = 1
+                        self.emission_matrix[10,7,6] = 1
+                        self.bookkeeping[6,7,7] = 0
+                        self.emission_matrix[6,7,7] = 0
+                        self.bookkeeping[6,7,5] = 1
+                        self.emission_matrix[6,7,5] = 1
+                        self.emission_matrix[12, 7, 4] = 0 #undefined pieces
+                        self.emission_matrix[12, 7, 7] = 0
+                        self.emission_matrix[12, 7, 5] = 1
+                        self.emission_matrix[12, 7, 6] = 1
+                        self.emission_matrix[14,0,4] = 1 #empty squares
+                        self.emission_matrix[14,0,7] = 1
+                        
                 else:
-                    for i in range(to_row + 1, from_row):
-                        self.emission_matrix[14,i,from_col] = 1 #empty squares
+                    
+                    if self.white == True:
+                        
+                        self.bookkeeping[4,0,4] = 0
+                        self.emission_matrix[4,0,4] = 0
+                        self.bookkeeping[4,0,2] = 1
+                        self.emission_matrix[4,0,2] = 1
+                        self.bookkeeping[0,0,0] = 0
+                        self.emission_matrix[0,0,0] = 0
+                        self.bookkeeping[0,0,3] = 1
+                        self.emission_matrix[0,0,3] = 1
+                        self.emission_matrix[12, 0, 4] = 0 #undefined pieces
+                        self.emission_matrix[12, 0, 0] = 0
+                        self.emission_matrix[12, 0, 2] = 1
+                        self.emission_matrix[12, 0, 3] = 1
+                        self.emission_matrix[14,0,0] = 1 #empty squares
+                        self.emission_matrix[14,0,1] = 1
+                        self.emission_matrix[14,0,4] = 1
+                        
+                    else:
+                        
+                        self.bookkeeping[10,7,4] = 0
+                        self.emission_matrix[10,7,4] = 0
+                        self.bookkeeping[10,7,2] = 1
+                        self.emission_matrix[10,7,2] = 1
+                        self.bookkeeping[6,7,0] = 0
+                        self.emission_matrix[6,7,0] = 0
+                        self.bookkeeping[6,7,3] = 1
+                        self.emission_matrix[6,7,3] = 1
+                        self.emission_matrix[12, 7, 4] = 0 #undefined pieces
+                        self.emission_matrix[12, 7, 0] = 0
+                        self.emission_matrix[12, 7, 2] = 1
+                        self.emission_matrix[12, 7, 3] = 1
+                        self.emission_matrix[14,7,0] = 1 #empty squares
+                        self.emission_matrix[14,7,1] = 1
+                        self.emission_matrix[14,7,4] = 1
+            
+            else:
+            
+            
+                from_row, from_col = get_row_col_from_num(taken_move.from_square)
+                to_row, to_col = get_row_col_from_num(taken_move.to_square)
                 
-
+                try:
+                    piece_type = find_piece_type(self.bookkeeping,from_row,from_col)
+                except Exception as inst:
+                    print(type(inst))
+                    #pdb.set_trace()
+                
+                
+                self.bookkeeping[piece_type, from_row, from_col] = 0
+                self.emission_matrix[piece_type, from_row, from_col] = 0
+                
+                if (taken_move.promotion == None):
+                    self.bookkeeping[piece_type, to_row, to_col] = 1
+                    self.emission_matrix[piece_type, to_row, to_col] = 1
+                else:
+                    piece_type = taken_move.promotion
+                    piece_type = piece_type_converter(piece_type, self.white)
+                    self.bookkeeping[piece_type, to_row, to_col] = 1
+                    self.emission_matrix[piece_type, to_row, to_col] = 1
+                
+                self.emission_matrix[13 - int(self.white), from_row, from_col] = 0
+                self.emission_matrix[13 - int(self.white), to_row, to_col] = 1
+                
+                if (from_row == to_row):
+                    if (from_col <= to_col):
+                        for i in range(from_col + 1, to_col):
+                            self.emission_matrix[14,from_row,i] = 1 #empty squares
+                    else:
+                        for i in range(to_col +1, from_col):
+                            self.emission_matrix[14,from_row,i] = 1 #empty squares
+                        
+                if (from_col == to_col):
+                    if (from_col <= to_col):
+                        for i in range(from_row + 1, to_row):
+                            self.emission_matrix[14,i,from_col] = 1 #empty squares
+                    else:
+                        for i in range(to_row + 1, from_row):
+                            self.emission_matrix[14,i,from_col] = 1 #empty squares
+                
+        try:
+            assert (assert_bookkeeping_is_accurate(self.bookkeeping, self.board, self.white))
+            
+        except AssertionError as inst:
+            print(type(inst))
+            #pdb.set_trace()
+            
+        except TypeError as inst:
+            print(type(inst))
+            #pdb.set_trace()
 
         #possible issue: I am not considering a capture as an observation
         '''
@@ -192,7 +289,7 @@ class Random(Player):
         '''
 
         # self.sense_list.append(self.emission_matrix)  # could contain no updates
-        # self.truth_board_list.append(convert_fen_string(self.board.fen()))
+        # self.truth_board_list.append(print_fen_string(self.board.fen()))
 
 
     def handle_game_end(self, winner_color, win_reason):  # possible GameHistory object...
