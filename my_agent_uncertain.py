@@ -43,6 +43,7 @@ class AnotherChessBot(Player):
         """
         # TODO: implement this method
         self.board = board
+        self.fen = None
         self.color = color
         self.move_count = 0
         self.use_stockfish = False
@@ -146,6 +147,7 @@ class AnotherChessBot(Player):
 
         # Current board is most likely truth board
         gameapi = GameAPI(current_board)
+        self.fen = gameapi.fen
 
         # Endgame move to capture the opponent king
         move = gameapi.end_game_move(self.color)
@@ -183,8 +185,8 @@ class AnotherChessBot(Player):
         """
         if taken_move != None:
 
-            copy_board = self.board.copy()
-            copy_board.pop()
+            copy_board = chess.Board()
+            copy_board.set_fen(self.fen)
             if copy_board.is_castling(taken_move):
 
                 if copy_board.is_kingside_castling(taken_move):
@@ -303,16 +305,16 @@ class AnotherChessBot(Player):
                         for i in range(to_row + 1, from_row):
                             self.emission_matrix[14, i, from_col] = 1  # empty squares
 
-        try:
-            assert (assert_bookkeeping_is_accurate(self.bookkeeping, self.board, self.white))
-
-        except AssertionError as inst:
-            print(type(inst))
-            # pdb.set_trace()
-
-        except TypeError as inst:
-            print(type(inst))
-            # pdb.set_trace()
+        #try:
+        #    assert (assert_bookkeeping_is_accurate(self.bookkeeping, self.board, self.white))
+        #
+        #except AssertionError as inst:
+        #    print(type(inst))
+        #    # pdb.set_trace()
+        #
+        #except TypeError as inst:
+        #    print(type(inst))
+        #    # pdb.set_trace()
 
     def handle_game_end(self, winner_color, win_reason):  # possible GameHistory object...
         """
