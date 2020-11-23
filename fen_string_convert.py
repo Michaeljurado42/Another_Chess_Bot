@@ -507,7 +507,7 @@ def convert_one_hot_to_board(one_hot_board):
 
     board_one_hot_converted = convert_fen_string(board.fen())
 
-   # assert np.all(board_one_hot_converted[:12, :, :] == one_hot_board)
+    #assert np.all(board_one_hot_converted[:12, :, :] == one_hot_board)
     return board
 
 def assert_bookkeeping_is_accurate(bookkeeping, board, white):
