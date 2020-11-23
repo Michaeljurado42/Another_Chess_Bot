@@ -20,7 +20,7 @@ import chess.engine
 import numpy as np
 from stockfish import Stockfish
 from uncertainty_rnn import BoardGuesserNetOnline
-from fen_string_convert import process_sense, create_blank_emission_matrix, get_row_col_from_num, get_most_likely_truth_board, convert_one_hot_to_board, start_bookkeeping, find_piece_type, assert_bookkeeping_is_accurate
+from fen_string_convert import process_sense, create_blank_emission_matrix, get_row_col_from_num, get_most_likely_truth_board, convert_one_hot_to_board, start_bookkeeping, find_piece_type, assert_bookkeeping_is_accurate, piece_type_converter
 
 
 # TODO: Rename this class to what you would like your bot to be named during the game.
@@ -139,15 +139,9 @@ class AnotherChessBot(Player):
         current_board = convert_one_hot_to_board(pred_board)
         current_board.turn = self.color
         self.move_count += 1
-        # whom: Run MCTS simulation for num_simulations and then choose the best move
-        # Provide current_board (or what we believe to be the current board) to MCTS
-        # During training self.board has been modified to be the truth board
 
-        #current_board = self.board
-        print("The most likely game board")
+        # Current board is most likely truth board
         gameapi = GameAPI(current_board)
-        print(gameapi.fen)
-        gameapi.print_board()
 
         # Endgame move to capture the opponent king
         move = gameapi.end_game_move(self.color)
