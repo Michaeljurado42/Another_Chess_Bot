@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from collections import deque
 import sys
 from modified_play_game import play_game
-from fen_string_convert import convert_truncated_to_truth
+from fen_string_convert import convert_truncated_to_truth, get_most_likely_truth_board, convert_one_hot_to_board
 
 # # Board Guess
 
@@ -157,21 +157,12 @@ def check_first_square(X_train_batch, guessNet):
     """
     X_train_batch = torch.Tensor(X_train_batch)
     pred_labels = guessNet(X_train_batch)
-    first_pred_label = pred_labels[0].detach().cpu().numpy()
+    first_pred_label = pred_labels.detach()
 
-    # take an argmax to get the most probable board
-    max_pred = np.zeros(first_pred_label.shape)
-    max_pred[np.arange(first_pred_label.shape[0]), np.argmax(first_pred_label, axis=1)] = 1
+    most_likely = get_most_likely_truth_board(first_pred_label, X_train_batch[0].detach().numpy(), True)
 
-    # convert it into standard truth board format
-    pred_board = convert_truncated_to_truth(max_pred)
+    print(convert_one_hot_to_board(most_likely))
 
-    print("pred board for first time step")
-    index = 0
-    for channel in [np.argwhere(i) for i in pred_board]:
-        print("active arguments in channel", index)
-        print(channel)
-        index += 1
 
 
 
@@ -266,5 +257,5 @@ for epoch in range(train_iterations):
 
         X_train_batch_white, y_train_batch_white, X_train_batch_black, y_train_batch_black = run_game()
         print("printing board for white")
-        check_first_square(X_train_batch_white,guessNet_white)
+        check_first_square(X_train_batch_white, guessNet_white)
 

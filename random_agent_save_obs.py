@@ -109,7 +109,7 @@ class Random(Player):
 
         # collect dataset
         self.sense_list.append(self.emission_matrix)
-        self.truth_board_list.append(get_truncated_board_short(self.board))
+        self.truth_board_list.append(get_truncated_board_short(self.board, self.white))
         pass
 
     def choose_move(self, possible_moves, seconds_left):

@@ -20,7 +20,7 @@ import chess.engine
 import numpy as np
 from stockfish import Stockfish
 from uncertainty_rnn import BoardGuesserNetOnline
-from fen_string_convert import process_sense, create_blank_emission_matrix, get_row_col_from_num, get_most_likely_truth_board, convert_one_hot_to_board
+from fen_string_convert import process_sense, create_blank_emission_matrix, get_row_col_from_num, get_most_likely_truth_board, convert_one_hot_to_board, start_bookkeeping, find_piece_type, assert_bookkeeping_is_accurate
 
 
 # TODO: Rename this class to what you would like your bot to be named during the game.
@@ -48,6 +48,7 @@ class AnotherChessBot(Player):
         self.use_stockfish = False
 
         self.network = BoardGuesserNetOnline() # neural network for inferring truth board
+
         if color:
             self.network.load_state_dict(torch.load("white_rnn_model"))
         else:
@@ -61,6 +62,7 @@ class AnotherChessBot(Player):
         if self.load_weights:
             self.nnet.load_checkpoint(folder="models", filename="stockfish.pth.tar")
 
+        self.bookkeeping = start_bookkeeping(self.white)
     def handle_opponent_move_result(self, captured_piece, captured_square):
         """
         This function is called at the start of your turn and gives you the chance to update your board.
@@ -69,10 +71,17 @@ class AnotherChessBot(Player):
         :param captured_square: chess.Square - position where your piece was captured
         """
 
+        #BOOKKEEPING
+        self.emission_matrix[-1, :, :] = int(self.white)
+        self.emission_matrix[:12] = np.copy(self.bookkeeping)
+
         if captured_piece:
             row, col = get_row_col_from_num(captured_square)
-            self.emission_matrix[12, row, col] = 1
-        pass
+            piece_type = find_piece_type(self.bookkeeping, row, col)
+            self.bookkeeping[piece_type, row, col] = 0
+            self.emission_matrix[piece_type, row, col] = 0
+            self.emission_matrix[13 - int(self.white), row, col] = 0
+            self.emission_matrix[12 + int(self.white), row, col] = 1
 
     def choose_sense(self, possible_sense, possible_moves, seconds_left):
         """
@@ -125,7 +134,7 @@ class AnotherChessBot(Player):
 
         # Use rnn to figure out state
         self.softmax_out, self.hidden = self.network(torch.Tensor([self.emission_matrix]), self.hidden)
-        pred_board = get_most_likely_truth_board(self.softmax_out)
+        pred_board = get_most_likely_truth_board(self.softmax_out, self.emission_matrix, self.white)
 
         current_board = convert_one_hot_to_board(pred_board)
         current_board.turn = self.color
@@ -135,7 +144,7 @@ class AnotherChessBot(Player):
         # During training self.board has been modified to be the truth board
 
         #current_board = self.board
-
+        print("The most likely game board")
         gameapi = GameAPI(current_board)
         gameapi.print_board()
 
@@ -173,25 +182,138 @@ class AnotherChessBot(Player):
         :param captured_piece: bool - true if you captured your opponents piece
         :param captured_square: chess.Square - position where you captured the piece
         """
-        # TODO: implement this method
-        if requested_move != None:
-            from_row, from_col = get_row_col_from_num(requested_move.from_square)
-            self.emission_matrix[13, from_row, from_col] = 1
+        if taken_move != None:
 
-            to_row, to_col = get_row_col_from_num(requested_move.to_square)
-            self.emission_matrix[14, from_row, from_col] = 1
+            copy_board = self.board.copy()
+            copy_board.pop()
+            if copy_board.is_castling(taken_move):
 
-        if taken_move != None:  # what was the move you actually took
-            from_row, from_col = get_row_col_from_num(taken_move.from_square)
-            self.emission_matrix[15, from_row, from_col] = 1
+                if copy_board.is_kingside_castling(taken_move):
 
-            to_row, to_col = get_row_col_from_num(taken_move.to_square)
-            self.emission_matrix[16, from_row, from_col] = 1
+                    if self.white == True:
 
-        if captured_piece:  # did you capture a piece
-            self.emission_matrix[17,:, :] = 1
+                        self.bookkeeping[4, 0, 4] = 0
+                        self.emission_matrix[4, 0, 4] = 0
+                        self.bookkeeping[4, 0, 6] = 1
+                        self.emission_matrix[4, 0, 6] = 1
+                        self.bookkeeping[0, 0, 7] = 0
+                        self.emission_matrix[0, 0, 7] = 0
+                        self.bookkeeping[0, 0, 5] = 1
+                        self.emission_matrix[0, 0, 5] = 1
+                        self.emission_matrix[12, 0, 4] = 0  # undefined pieces
+                        self.emission_matrix[12, 0, 7] = 0
+                        self.emission_matrix[12, 0, 5] = 1
+                        self.emission_matrix[12, 0, 6] = 1
+                        self.emission_matrix[14, 0, 4] = 1  # empty squares
+                        self.emission_matrix[14, 0, 7] = 1
 
-        pass
+                    else:
+
+                        self.bookkeeping[10, 7, 4] = 0
+                        self.emission_matrix[10, 7, 4] = 0
+                        self.bookkeeping[10, 7, 6] = 1
+                        self.emission_matrix[10, 7, 6] = 1
+                        self.bookkeeping[6, 7, 7] = 0
+                        self.emission_matrix[6, 7, 7] = 0
+                        self.bookkeeping[6, 7, 5] = 1
+                        self.emission_matrix[6, 7, 5] = 1
+                        self.emission_matrix[12, 7, 4] = 0  # undefined pieces
+                        self.emission_matrix[12, 7, 7] = 0
+                        self.emission_matrix[12, 7, 5] = 1
+                        self.emission_matrix[12, 7, 6] = 1
+                        self.emission_matrix[14, 0, 4] = 1  # empty squares
+                        self.emission_matrix[14, 0, 7] = 1
+
+                else:
+
+                    if self.white == True:
+
+                        self.bookkeeping[4, 0, 4] = 0
+                        self.emission_matrix[4, 0, 4] = 0
+                        self.bookkeeping[4, 0, 2] = 1
+                        self.emission_matrix[4, 0, 2] = 1
+                        self.bookkeeping[0, 0, 0] = 0
+                        self.emission_matrix[0, 0, 0] = 0
+                        self.bookkeeping[0, 0, 3] = 1
+                        self.emission_matrix[0, 0, 3] = 1
+                        self.emission_matrix[12, 0, 4] = 0  # undefined pieces
+                        self.emission_matrix[12, 0, 0] = 0
+                        self.emission_matrix[12, 0, 2] = 1
+                        self.emission_matrix[12, 0, 3] = 1
+                        self.emission_matrix[14, 0, 0] = 1  # empty squares
+                        self.emission_matrix[14, 0, 1] = 1
+                        self.emission_matrix[14, 0, 4] = 1
+
+                    else:
+
+                        self.bookkeeping[10, 7, 4] = 0
+                        self.emission_matrix[10, 7, 4] = 0
+                        self.bookkeeping[10, 7, 2] = 1
+                        self.emission_matrix[10, 7, 2] = 1
+                        self.bookkeeping[6, 7, 0] = 0
+                        self.emission_matrix[6, 7, 0] = 0
+                        self.bookkeeping[6, 7, 3] = 1
+                        self.emission_matrix[6, 7, 3] = 1
+                        self.emission_matrix[12, 7, 4] = 0  # undefined pieces
+                        self.emission_matrix[12, 7, 0] = 0
+                        self.emission_matrix[12, 7, 2] = 1
+                        self.emission_matrix[12, 7, 3] = 1
+                        self.emission_matrix[14, 7, 0] = 1  # empty squares
+                        self.emission_matrix[14, 7, 1] = 1
+                        self.emission_matrix[14, 7, 4] = 1
+
+            else:
+
+                from_row, from_col = get_row_col_from_num(taken_move.from_square)
+                to_row, to_col = get_row_col_from_num(taken_move.to_square)
+
+                try:
+                    piece_type = find_piece_type(self.bookkeeping, from_row, from_col)
+                except Exception as inst:
+                    print(type(inst))
+                    # pdb.set_trace()
+
+                self.bookkeeping[piece_type, from_row, from_col] = 0
+                self.emission_matrix[piece_type, from_row, from_col] = 0
+
+                if (taken_move.promotion == None):
+                    self.bookkeeping[piece_type, to_row, to_col] = 1
+                    self.emission_matrix[piece_type, to_row, to_col] = 1
+                else:
+                    piece_type = taken_move.promotion
+                    piece_type = piece_type_converter(piece_type, self.white)
+                    self.bookkeeping[piece_type, to_row, to_col] = 1
+                    self.emission_matrix[piece_type, to_row, to_col] = 1
+
+                self.emission_matrix[13 - int(self.white), from_row, from_col] = 0
+                self.emission_matrix[13 - int(self.white), to_row, to_col] = 1
+
+                if (from_row == to_row):
+                    if (from_col <= to_col):
+                        for i in range(from_col + 1, to_col):
+                            self.emission_matrix[14, from_row, i] = 1  # empty squares
+                    else:
+                        for i in range(to_col + 1, from_col):
+                            self.emission_matrix[14, from_row, i] = 1  # empty squares
+
+                if (from_col == to_col):
+                    if (from_col <= to_col):
+                        for i in range(from_row + 1, to_row):
+                            self.emission_matrix[14, i, from_col] = 1  # empty squares
+                    else:
+                        for i in range(to_row + 1, from_row):
+                            self.emission_matrix[14, i, from_col] = 1  # empty squares
+
+        try:
+            assert (assert_bookkeeping_is_accurate(self.bookkeeping, self.board, self.white))
+
+        except AssertionError as inst:
+            print(type(inst))
+            # pdb.set_trace()
+
+        except TypeError as inst:
+            print(type(inst))
+            # pdb.set_trace()
 
     def handle_game_end(self, winner_color, win_reason):  # possible GameHistory object...
         """

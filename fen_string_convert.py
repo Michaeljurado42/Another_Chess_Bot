@@ -234,7 +234,10 @@ def get_truncated_board(truth_board):
     :return:
     """
 
-    raw_truth_board = convert_fen_string(truth_board.fen())
+    if isinstance(truth_board, type(np.array([]))):
+        raw_truth_board = truth_board
+    elif isinstance(truth_board, chess.Board):
+        raw_truth_board = convert_fen_string(truth_board.fen())
 
     output = np.zeros((36, 65))  # 65 is for the graveuyard
 
@@ -254,7 +257,6 @@ def get_truncated_board(truth_board):
     convert_channel(output, raw_truth_board, 10, 27, 1)  # k
     convert_channel(output, raw_truth_board, 11, 28, 8)  # p
 
-    new_truth_board = convert_truncated_to_truth(output)
     # uncomment the assertion to get boast in run time
 #    assert_truth_board_is_accurate(new_truth_board, raw_truth_board)
     return output
@@ -294,32 +296,43 @@ def get_truncated_board_short(truth_board, white = True):
     10-17 :p
 
 
+    :param truth_board: chess.Board object
     :param white: Whether or not we are extracting just white, or just black. (If you are training on white then you
     want white to be False) :param truth_board: gets truncated truth board from the truth board :return:
     """
-
-    raw_truth_board = convert_fen_string(truth_board.fen())
+    if isinstance(truth_board,  type(np.array([]))):
+        raw_truth_board = truth_board
+    elif isinstance(truth_board, chess.Board):
+        raw_truth_board = convert_fen_string(truth_board.fen())
 
     output = np.zeros((18, 65))  # 65 is for the graveyard
-    if white:
-        convert_channel(output, raw_truth_board, 0, 0, 2)  # R at channel 0. There should be two of them
-        convert_channel(output, raw_truth_board, 1, 2, 2)  # N at channel 1. There should be two of them
-        convert_channel(output, raw_truth_board, 2, 4, 2)  # B at channel 2.
-        convert_channel(output, raw_truth_board, 3, 6, 3)  # Q
-        convert_channel(output, raw_truth_board, 4, 9, 1)  # K
-        convert_channel(output, raw_truth_board, 5, 10, 8)  # P
+
+    # Need to predict black pieces
+    if not white:
+        convert_channel(output, raw_truth_board, 6, 0, 2)  # R at channel 0. There should be two of them
+        convert_channel(output, raw_truth_board, 7, 2, 2)  # N at channel 1. There should be two of them
+        convert_channel(output, raw_truth_board, 8, 4, 2)  # B at channel 2.
+        convert_channel(output, raw_truth_board, 9, 6, 3)  # Q
+        convert_channel(output, raw_truth_board, 10, 9, 1)  # K
+        convert_channel(output, raw_truth_board, 11, 10, 8)  # P
+
+        output_padded = np.zeros((36, 65))
+        output_padded[18:] = output
+        new_truth_board = convert_truncated_to_truth(output_padded)
+        assert_truth_board_is_accurate(new_truth_board[6:], raw_truth_board[6:])
+
     else:
-        # BLACK PIECES
-        convert_channel(output, raw_truth_board, 6, 0, 2)  # r
-        convert_channel(output, raw_truth_board, 7, 2, 2)  # n
-        convert_channel(output, raw_truth_board, 8, 4, 2)  # b
-        convert_channel(output, raw_truth_board, 9, 6, 3)  # q
-        convert_channel(output, raw_truth_board, 10, 9, 1)  # k
-        convert_channel(output, raw_truth_board, 11, 10, 8)  # p
+        convert_channel(output, raw_truth_board, 0, 0, 2)  # r
+        convert_channel(output, raw_truth_board, 1, 2, 2)  # n
+        convert_channel(output, raw_truth_board, 2, 4, 2)  # b
+        convert_channel(output, raw_truth_board, 3, 6, 3)  # q
+        convert_channel(output, raw_truth_board, 4, 9, 1)  # k
+        convert_channel(output, raw_truth_board, 5, 10, 8)  # p
 
-    new_truth_board = convert_truncated_to_truth(output)
-
-    assert_truth_board_is_accurate(new_truth_board, raw_truth_board)
+        output_padded = np.zeros((36, 65))
+        output_padded[:18] = output
+        new_truth_board = convert_truncated_to_truth(output_padded)
+        assert_truth_board_is_accurate(new_truth_board[:6], raw_truth_board[:6])
     return output
 
 
@@ -355,7 +368,7 @@ def convert_truncated_to_truth(truncated_board):
     fill_channel(truncated_board, raw_truth_board, 0, 0, 2)  # R
     fill_channel(truncated_board, raw_truth_board, 2, 1, 2)  # N
     fill_channel(truncated_board, raw_truth_board, 4, 2, 2)  # B
-    fill_channel(truncated_board, raw_truth_board, 6, 3, 1)  # Q
+    fill_channel(truncated_board, raw_truth_board, 6, 3, 3)  # Q
     fill_channel(truncated_board, raw_truth_board, 9, 4, 1)  # K
     fill_channel(truncated_board, raw_truth_board, 10, 5, 8)  # P
 
@@ -363,7 +376,7 @@ def convert_truncated_to_truth(truncated_board):
     fill_channel(truncated_board, raw_truth_board, 18, 6, 2)  # r
     fill_channel(truncated_board, raw_truth_board, 20, 7, 2)  # n
     fill_channel(truncated_board, raw_truth_board, 22, 8, 2)  # b
-    fill_channel(truncated_board, raw_truth_board, 24, 9, 1)  # q
+    fill_channel(truncated_board, raw_truth_board, 24, 9, 3)  # q
     fill_channel(truncated_board, raw_truth_board, 27, 10, 1)  # k
     fill_channel(truncated_board, raw_truth_board, 28, 11, 8)  # p
 
@@ -378,7 +391,7 @@ def assert_truth_board_is_accurate(new_truth_board, truth_board):
      :param truth_board:
      :return:
      """
-    for i in range(12):
+    for i in range(new_truth_board.shape[0]):
         channel_new = new_truth_board[i]
         channel_truth = truth_board[i][:12]
 
@@ -405,19 +418,46 @@ def find_piece_type(bookkeeping, row: int, column: int):
         
     raise Exception("Sorry, that square does not have any piece on it")  #book
 
-def get_most_likely_truth_board(truncated_board: torch.Tensor):
+def get_most_likely_truth_board(truncated_board: torch.Tensor, emission_matrix: np.array, white):
     """
 
-    :param truncated_board: raw output of neural network
+    :param truncated_board: Raw output of neural network
+    :param emission_matrix: emission matrix filled with true facts
     :return:
     """
     if len(truncated_board.shape) == 3:
         truncated_board = truncated_board[0]
-    elif len(truncated_board) != 2:
+    elif len(truncated_board.shape) != 2:
+        print(truncated_board.shape)
         raise(Exception("Truncated board is wrong shape"))
 
-    softmax = torch.nn.functional.softmax(truncated_board, dim = 1).detach().cpu().numpy()
+    known_pieces = emission_matrix[:12]
+    softmax_known = get_truncated_board(known_pieces)
+    if white:
+        softmax_known[18:, -1] = 0  # only remove dead pieces for black
+    else:
+        softmax_known[:18, -1] = 0  # remove only dead white
+
+    softmax_unknown = torch.nn.functional.softmax(truncated_board,
+                                                  dim=1).detach().cpu().numpy()  # softmax is over black
+    if white:
+        softmax = np.vstack((np.zeros((18, 65)), softmax_unknown))  #only predicting blacks pieces
+    else:
+        softmax = np.vstack((softmax_unknown, np.zeros((18, 65))))  # only predicting white's pieces
+
     max_truncated_board = np.zeros(softmax.shape) # board with maximum probability. Use greedy heuristic
+    # fill in the known pieces first.
+    for channel_idx in range(softmax_known.shape[0]):
+        if np.any(softmax_known[channel_idx]):
+            max_piece_pos = np.argmax(softmax_known[channel_idx])
+
+            max_truncated_board[channel_idx, max_piece_pos] = 1
+            softmax[channel_idx, :] = -1  # cover up this row so we don't pick it again
+
+            if max_piece_pos != 64:
+                softmax[:, max_piece_pos] = -1  # do not pick any pieces in this spot
+
+    assert np.all(convert_truncated_to_truth(max_truncated_board) == known_pieces)  # have you filled in the known pieces correctly
 
     # loop greedily finds the most likely piece one at a time and prevents other pieces from being on that square
     while True:
@@ -425,12 +465,15 @@ def get_most_likely_truth_board(truncated_board: torch.Tensor):
         max_piece = np.argmax(max_probs)
         if max_probs[max_piece] == -1:
             break
-        max_piece_pos = np.argmax(softmax[max_piece])
 
+        max_piece_pos = np.argmax(softmax[max_piece])
         max_truncated_board[max_piece, max_piece_pos] = 1
 
-        softmax[max_piece,:] = -1  # cover up this row so we don't pick it again
-        softmax[:, max_piece_pos] = -1
+        softmax[max_piece, :] = -1  # cover up this row so we don't pick it again
+        if max_piece_pos != 64:  #
+            softmax[:, max_piece_pos] = -1  # do not pick any pieces in this spot
+
+
 
     return convert_truncated_to_truth(max_truncated_board)
 
@@ -449,7 +492,7 @@ def convert_one_hot_to_board(one_hot_board):
 
     board.clear_board() # clear board
 
-    piece_str_dict =  {v: k for k, v in position_converter.items()}  # inverse if position convert
+    piece_str_dict = {v: k for k, v in position_converter.items()}  # inverse if position convert
 
     for channel_idx in range(one_hot_board.shape[0]):
         channel = one_hot_board[channel_idx]
