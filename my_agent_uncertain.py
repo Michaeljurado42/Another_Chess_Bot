@@ -146,6 +146,7 @@ class AnotherChessBot(Player):
         #current_board = self.board
         print("The most likely game board")
         gameapi = GameAPI(current_board)
+        print(gameapi.fen)
         gameapi.print_board()
 
         # Endgame move to capture the opponent king
