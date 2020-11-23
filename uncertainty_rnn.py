@@ -13,12 +13,12 @@ class BoardGuesserNet(nn.Module):
 
         """This could be a small backbone"""
         self.conv1 = torch.nn.Conv2d(16, 32, 3)
-        torch.nn.init.xavier_uniform(self.conv1.weight, gain = 1)
+        torch.nn.init.xavier_uniform_(self.conv1.weight, gain = 1)
         self.relu1 = torch.nn.LeakyReLU()
         self.pool1 = torch.nn.MaxPool2d(2)
 
         self.conv2 = torch.nn.Conv2d(32, 64, 2)
-        torch.nn.init.xavier_uniform(self.conv2.weight, gain = 1)
+        torch.nn.init.xavier_uniform_(self.conv2.weight, gain = 1)
         self.relu2 = torch.nn.LeakyReLU()
         self.pool2 = torch.nn.MaxPool2d(2)
 
@@ -28,7 +28,7 @@ class BoardGuesserNet(nn.Module):
 
         # recast board to truth
         self.dense1 = torch.nn.Linear(256, 640)
-        torch.nn.init.xavier_uniform(self.dense1.weight, gain = 1)
+        torch.nn.init.xavier_uniform_(self.dense1.weight, gain = 1)
         self.relu3 = torch.nn.LeakyReLU()
 
         self.dense2 = torch.nn.Linear(640, 18 * 65)
@@ -72,12 +72,12 @@ class BoardGuesserNetOnline(nn.Module):
 
         """This could be a small backbone"""
         self.conv1 = torch.nn.Conv2d(16, 32, 3)
-        torch.nn.init.xavier_uniform(self.conv1.weight, gain=1)
+        torch.nn.init.xavier_uniform_(self.conv1.weight, gain=1)
         self.relu1 = torch.nn.LeakyReLU()
         self.pool1 = torch.nn.MaxPool2d(2)
 
         self.conv2 = torch.nn.Conv2d(32, 64, 2)
-        torch.nn.init.xavier_uniform(self.conv2.weight, gain=1)
+        torch.nn.init.xavier_uniform_(self.conv2.weight, gain=1)
         self.relu2 = torch.nn.LeakyReLU()
         self.pool2 = torch.nn.MaxPool2d(2)
 
@@ -87,7 +87,7 @@ class BoardGuesserNetOnline(nn.Module):
 
         # recast board to truth
         self.dense1 = torch.nn.Linear(256, 640)
-        torch.nn.init.xavier_uniform(self.dense1.weight, gain=1)
+        torch.nn.init.xavier_uniform_(self.dense1.weight, gain=1)
         self.relu3 = torch.nn.LeakyReLU()
 
         self.dense2 = torch.nn.Linear(640, 18 * 65)
