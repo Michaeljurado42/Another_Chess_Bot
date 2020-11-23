@@ -94,7 +94,11 @@ class AnotherChessBot(Player):
         :return: chess.SQUARE -- the center of 3x3 section of the board you want to sense
         :example: choice = chess.A1
         """
-        # TODO: update this method
+        # Limit sensing to squares that are not on the edge of the board
+        #
+        #                b2, c2, d2, e2, f2, g2, b3, c3, d3, e3, f3, g3, b4, c4, d4, e4, f4, g4, b5, c5, d5, e5, f5, g5, b6, c6, d6, e6, f6, g6, b7, c7, d7, e7, f7, g7
+        possible_sense = [9, 10, 11, 12, 13, 14, 17, 18, 19, 20, 21, 22, 25, 26, 27, 28, 29, 30, 33, 34, 35, 36, 37, 38, 41, 42, 43, 44, 45, 46, 49, 50, 51, 52, 53, 54]
+
         return random.choice(possible_sense)
 
     def handle_sense_result(self, sense_result):
