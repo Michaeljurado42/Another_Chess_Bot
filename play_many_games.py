@@ -16,6 +16,8 @@ from player import load_player
 from game import Game
 from datetime import datetime
 import time
+from multiprocessing import Pool
+
 
 
 def play_local_game(white_player, black_player, player_names):
@@ -32,7 +34,6 @@ def play_local_game(white_player, black_player, player_names):
     output.write("Starting Game between {}-WHITE and {}-BLACK\n".format(player_names[0], player_names[1]))
     output_true.write("Starting Game between {}-WHITE and {}-BLACK\n".format(player_names[0], player_names[1]))
 
-    # whom: Modified to pass in truth_board.  This won't be available when we turn in the assignment
     #white_player.handle_game_start(chess.WHITE, game.truth_board)
     #black_player.handle_game_start(chess.BLACK, game.truth_board)
     white_player.handle_game_start(chess.WHITE, chess.Board())
@@ -42,43 +43,44 @@ def play_local_game(white_player, black_player, player_names):
 
     move_number = 1
     while not game.is_over():
-        if game.turn:
-            output.write("##################################--WHITE's Turn [{}]\n".format(move_number))
-            output.write("##################################--Current Board State\n")
-            format_write_board(output, game.white_board)
-            output_true.write("##################################--WHITE's Turn [{}]\n".format(move_number))
+        #if game.turn:
+        #    output.write("##################################--WHITE's Turn [{}]\n".format(move_number))
+        #    output.write("##################################--Current Board State\n")
+        #    format_write_board(output, game.white_board)
+        #    output_true.write("##################################--WHITE's Turn [{}]\n".format(move_number))
 
-            print("WHITE's Turn [{}]".format(move_number))
-            format_print_board(game.white_board)
+        #    print("WHITE's Turn [{}]".format(move_number))
+        #    format_print_board(game.white_board)
 
-        else:
-            output.write("##################################--BLACK's Turn [{}]\n".format(move_number))
-            output.write("##################################--Current Board State \n")
-            format_write_board(output, game.black_board)
-            output_true.write("##################################--BLACK's Turn [{}]\n".format(move_number))
+        #else:
+        #    output.write("##################################--BLACK's Turn [{}]\n".format(move_number))
+        #    output.write("##################################--Current Board State \n")
+        #    format_write_board(output, game.black_board)
+        #    output_true.write("##################################--BLACK's Turn [{}]\n".format(move_number))
 
-            print("BLACK's Turn [{}]".format(move_number))
-            format_print_board(game.black_board)
+        #    print("BLACK's Turn [{}]".format(move_number))
+        #    format_print_board(game.black_board)
 
-        output_true.write("##################################--Current Board State\n")
-        format_write_board(output_true, game.truth_board)
+        #output_true.write("##################################--Current Board State\n")
+        #format_write_board(output_true, game.truth_board)
 
         requested_move, taken_move = play_turn(game, players[game.turn], game.turn, move_number, output, output_true)
         print_game(game, move_number, game.turn, requested_move, taken_move)
         move_number += 1
 
-        print("==================================\n")
+        #print("==================================\n")
 
     winner_color, winner_reason = game.get_winner()
 
     white_player.handle_game_end(winner_color, winner_reason)
     black_player.handle_game_end(winner_color, winner_reason)
 
-    output.write("Game Over!\n")
-    if winner_color is not None:
-        output.write(winner_reason)
-    else:
-        output.write('Draw!')
+    #print("Game finished in ", move_number, "moves")
+    #output.write("Game Over!\n")
+    #if winner_color is not None:
+    #    output.write(winner_reason)
+    #else:
+    #    output.write('Draw!')
     return winner_color, winner_reason
 
 
@@ -96,11 +98,11 @@ def play_turn(game, player, turn, move_number, output, output_true):
     player.handle_sense_result(sense_result)
     print_sense(game, turn, sense)
 
-    output.write("##################################--Sense Around Square {}\n".format(chess.SQUARE_NAMES[sense]))
-    if turn:
-        format_write_board(output, game.white_board)
-    else:
-        format_write_board(output, game.black_board)
+    #output.write("##################################--Sense Around Square {}\n".format(chess.SQUARE_NAMES[sense]))
+    #if turn:
+    #    format_write_board(output, game.white_board)
+    #else:
+    #    format_write_board(output, game.black_board)
 
     # play move action
     move = player.choose_move(possible_moves, game.get_seconds_left())
@@ -108,21 +110,22 @@ def play_turn(game, player, turn, move_number, output, output_true):
     player.handle_move_result(requested_move, taken_move, reason, captured_square is not None,
                               captured_square)
 
-    output.write("##################################--Move requested: {} -- Move taken: {}\n".format(requested_move, taken_move))
-    output_true.write("##################################--Move requested: {} -- Move taken: {}\n\n".format(requested_move, taken_move))
-    if turn:
-        format_write_board(output, game.white_board)
-    else:
-        format_write_board(output, game.black_board)
+    #output.write("##################################--Move requested: {} -- Move taken: {}\n".format(requested_move, taken_move))
+    #output_true.write("##################################--Move requested: {} -- Move taken: {}\n\n".format(requested_move, taken_move))
+    #if turn:
+    #    format_write_board(output, game.white_board)
+    #else:
+    #    format_write_board(output, game.black_board)
 
-    output.write("##################################--Truth Board State\n")
-    format_write_board(output, game.truth_board)
+    #output.write("##################################--Truth Board State\n")
+    #format_write_board(output, game.truth_board)
 
     game.end_turn()
     return requested_move, taken_move
 
 
 def print_game(game, move_number, turn, move_requested, move_taken):
+    return
     if not turn:
         print("[WHITE]-- Move requested: {} -- Move taken: {}".format(move_requested, move_taken))
         format_print_board(game.white_board)
@@ -132,6 +135,7 @@ def print_game(game, move_number, turn, move_requested, move_taken):
 
 
 def print_sense(game, turn, sense):
+    return
     if turn:
         print("[WHITE]-- Sense Around Square {} --".format(chess.SQUARE_NAMES[sense]))
         format_print_board(game.white_board)
@@ -141,6 +145,7 @@ def print_sense(game, turn, sense):
 
 
 def format_print_board(board):
+    return
     rows = ['8', '7', '6', '5', '4', '3', '2', '1']
     fen = board.board_fen()
 
@@ -194,6 +199,36 @@ def format_write_board(out, board):
     out.write('\n')
 
 
+
+def play_games(inputs):
+    num_games, constructor_one, constructor_two = inputs 
+
+    player_one = constructor_one()
+    player_two = constructor_two()
+
+    players = [player_one, player_two]
+   
+    white_wins = 0
+    black_wins = 0
+    draws = 0
+
+    player_names = ["white", "black"]
+
+    for i in range(num_games):
+        win_color, win_reason = play_local_game(players[0], players[1], player_names)
+        if win_color is None:
+            draw += 1
+            print("Game", i, " draw")
+        elif win_color:
+            white_wins += 1
+            print("Game", i, " white")
+        else:
+            black_wins += 1
+            print("Game", i, " black")
+
+    return (white_wins, black_wins, draws) 
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Allows you to play against a bot. Useful for testing and debugging.')
     parser.add_argument('first_path', help='Path to first bot source file.')
@@ -202,24 +237,28 @@ if __name__ == '__main__':
     #                    help='The color you want to play as.')
     args = parser.parse_args()
 
+
     name_one, constructor_one = load_player(args.first_path)
-    player_one = constructor_one()
     name_two, constructor_two = load_player(args.second_path)
-    player_two = constructor_two()
 
-    players = [player_one, player_two]
-    player_names = [name_one, name_two]
+    agents = 4
+    chunksize = 1
+    inputs= [(50, constructor_one, constructor_two)] * agents
 
-    if name_one == "Human":
-        color = input("Play as (0)Random (1)White (2)Black: ")
-        if color == '2' or (color == '0' and random.uniform(0, 1) < 0.5):
-            players.reverse()
-            player_names.reverse()
+    white_wins = 0
+    black_wins = 0
+    draws = 0
 
-    win_color, win_reason = play_local_game(players[0], players[1], player_names)
+    with Pool(processes=agents) as pool:
+        results = pool.map(play_games, inputs, chunksize)
+        
+        for result in results:
+           print(result[0], result[1], result[2])
+           white_wins += result[0]
+           black_wins += result[1]
+           draws += result[2]
 
-    print('Game Over!')
-    if win_color is not None:
-        print(win_reason)
-    else:
-        print('Draw!')
+    print("white:", white_wins)
+    print("black:", black_wins)
+    print("draw:", draws)
+

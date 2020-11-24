@@ -77,7 +77,7 @@ class MCTS():
             self.Es[s] = self.game.getGameEnded()
         if self.Es[s] != 0:
             # terminal node
-            return -self.Es[s]
+            return self.Es[s]
 
         if s not in self.Ps:
             # leaf node
