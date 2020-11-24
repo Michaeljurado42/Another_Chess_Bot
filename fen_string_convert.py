@@ -457,7 +457,7 @@ def get_most_likely_truth_board(truncated_board: torch.Tensor, emission_matrix: 
             if max_piece_pos != 64:
                 softmax[:, max_piece_pos] = -1  # do not pick any pieces in this spot
 
-    assert np.all(convert_truncated_to_truth(max_truncated_board) == known_pieces)  # have you filled in the known pieces correctly
+    #assert np.all(convert_truncated_to_truth(max_truncated_board) == known_pieces)  # have you filled in the known pieces correctly
 
     # loop greedily finds the most likely piece one at a time and prevents other pieces from being on that square
     while True:

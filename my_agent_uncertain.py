@@ -30,12 +30,8 @@ class AnotherChessBot(Player):
 
         self.color = None
         self.board = None
-        self.immediate_threat = None
-        self.knight_rush_moves_black = {1: chess.Move(52,44), 2: chess.Move(62,45), 3: chess.Move(61,34), 4: chess.Move(60,62)}
-        self.knight_rush_moves_white = {1: chess.Move(12,28), 2: chess.Move(5,33), 3: chess.Move(33,60), 4: chess.Move(51,60)}
 
         self.load_weights = True
-        self.knight_rush = True
 
 
     def handle_game_start(self, color, board):
@@ -52,6 +48,10 @@ class AnotherChessBot(Player):
         self.color = color
         self.move_count = 0
         self.use_stockfish = False
+        self.knight_rush_moves_black = {1: chess.Move(52,44), 2: chess.Move(62,45), 3: chess.Move(61,34), 4: chess.Move(60,62)}
+        self.knight_rush_moves_white = {1: chess.Move(12,28), 2: chess.Move(5,33), 3: chess.Move(33,60), 4: chess.Move(51,60)}
+        self.immediate_threat = None
+        self.knight_rush = True
 
         self.network = BoardGuesserNetOnline() # neural network for inferring truth board
 
