@@ -20,8 +20,8 @@ import chess.engine
 import numpy as np
 from stockfish import Stockfish
 from uncertainty_rnn import BoardGuesserNetOnline
-from fen_string_convert import process_sense, create_blank_emission_matrix, get_row_col_from_num, get_most_likely_truth_board, convert_one_hot_to_board, start_bookkeeping, find_piece_type, assert_bookkeeping_is_accurate, piece_type_converter
-
+from fen_string_convert import is_knight_rush, process_sense, create_blank_emission_matrix, get_row_col_from_num, get_most_likely_truth_board, convert_one_hot_to_board, start_bookkeeping, find_piece_type, assert_bookkeeping_is_accurate, piece_type_converter
+import pdb
 
 # TODO: Rename this class to what you would like your bot to be named during the game.
 class AnotherChessBot(Player):
@@ -32,6 +32,7 @@ class AnotherChessBot(Player):
         self.board = None
 
         self.load_weights = True
+        self.knight_rush = True
 
     def handle_game_start(self, color, board):
         """
@@ -94,10 +95,24 @@ class AnotherChessBot(Player):
         :return: chess.SQUARE -- the center of 3x3 section of the board you want to sense
         :example: choice = chess.A1
         """
+        # e3, d4, f5
+        knight_rush_senses_black = {0: 20, 1: 27, 2: 37}
+        # whatever, b6, d7, e7
+        knight_rush_senses_white = {0: 52, 1: 41, 2: 51, 3: 52}
+        if (self.knight_rush):
+            if (self.color):
+                if (self.move_count in knight_rush_senses_white):
+                    return knight_rush_senses_white[self.move_count]
+            else:
+                if (self.move_count in knight_rush_senses_black):
+                    return knight_rush_senses_black[self.move_count]
+            
+        
         # Limit sensing to squares that are not on the edge of the board
         #
         #                b2, c2, d2, e2, f2, g2, b3, c3, d3, e3, f3, g3, b4, c4, d4, e4, f4, g4, b5, c5, d5, e5, f5, g5, b6, c6, d6, e6, f6, g6, b7, c7, d7, e7, f7, g7
         possible_sense = [9, 10, 11, 12, 13, 14, 17, 18, 19, 20, 21, 22, 25, 26, 27, 28, 29, 30, 33, 34, 35, 36, 37, 38, 41, 42, 43, 44, 45, 46, 49, 50, 51, 52, 53, 54]
+        
 
         return random.choice(possible_sense)
 
@@ -118,6 +133,11 @@ class AnotherChessBot(Player):
         # TODO: implement this method
         # Hint: until this method is implemented, any senses you make will be lost.
         process_sense(sense_result, self.emission_matrix)  # adds sensing information to emission matrix
+        
+        if (self.knight_rush):
+            self.knight_rush = is_knight_rush(sense_result, self.color)
+            
+        pdb.set_trace()
 
         pass
 
@@ -168,7 +188,40 @@ class AnotherChessBot(Player):
             move = chess.Move.from_uci(move)
 
         self.emission_matrix = create_blank_emission_matrix(self.white)  # clear it here
-        return move
+        
+        #knight rush
+        # all move_counts have a +1 because move_count has already been incrementend
+        # e7-e5, b8-c6, d7-d6 (or g8-f6)
+        knight_rush_moves_black = {1: chess.Move(52,36), 2: chess.Move(56,42), 3: chess.Move(51,43)}
+        # e2-e4, f1-b5, b5-e8, c6 or d7 - e8
+        knight_rush_moves_white = {1: chess.Move(12,28), 2: chess.Move(5,33), 3: chess.Move(33,60), 4: chess.Move(51,60)}
+        if (self.knight_rush):
+            if (self.color):
+                if (self.move_count in knight_rush_moves_white):
+                    if (self.move_count == 4):
+                        if (self.bookkeeping[2,6,3] == 0):
+                            self.emission_matrix = create_blank_emission_matrix(self.white)
+                            return chess.Move(42,60)
+                        else:
+                            self.emission_matrix = create_blank_emission_matrix(self.white)
+                            return knight_rush_moves_white[self.move_count]
+                    else:
+                        self.emission_matrix = create_blank_emission_matrix(self.white)
+                        return knight_rush_moves_white[self.move_count]
+            else:
+                if (self.move_count in knight_rush_moves_black):
+                    if (self.move_count == 3):
+                        #knight in f6
+                        if (self.emission_matrix[1,0,5] == 1):
+                            self.emission_matrix = create_blank_emission_matrix(self.white)
+                            #g8-f6
+                            return chess.Move(62,45)
+                    else:
+                        self.emission_matrix = create_blank_emission_matrix(self.white)
+                        return knight_rush_moves_black[self.move_count]
+        else: 
+            self.emission_matrix = create_blank_emission_matrix(self.white)  # clear it here
+            return move
 
     def handle_move_result(self, requested_move, taken_move, reason, captured_piece, captured_square):
         """

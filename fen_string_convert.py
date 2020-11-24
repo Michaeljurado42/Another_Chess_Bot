@@ -529,3 +529,44 @@ def piece_type_converter(piece_type, white):
         return output
     else:
         return (output + 6)
+    
+def is_knight_rush(sense_result, color):
+    '''
+    :param sense_result: A list of tuples, where each tuple contains a :class:`Square` in the sense, and if there
+                             was a piece on the square, then the corresponding :class:`chess.Piece`, otherwise `None`.
+                             
+    :param color: color of the player that is playing. We don't care about our own pieces
+    '''
+    #reminder: pawn 1, knight 2, bishop 3, rook 4, queen 5, king 6
+    dic_white = {1: ['a2', 'b2', 'c2', 'd2', 'e2', 'f2', 'g2', 'h2'], 2: ['b1', 'g1'], 3: ['c1', 'f1'], 4: ['a1', 'h1'], 5: ['d1'], 6: ['e1']}
+    dic_black = {1: ['a7', 'b7', 'c7', 'd7', 'e7', 'f7', 'g7', 'h7'], 2: ['b8', 'g8'], 3: ['c8', 'f8'], 4: ['a8', 'h8'], 5: ['d8'], 6: ['e8']}
+    
+    for sense in sense_result:
+        if (sense[1] != None):
+            #Here, we sensed a piece
+            if (sense[1].color != color):
+                #a piece that belongs to our opponent
+                square_name = chess.square_name(sense[0])
+                piece_type = sense[1].piece_type
+                
+                if (piece_type == 2):
+                    continue
+                
+                #an opponent piece that is not a knight
+                if (color == True):
+                    if (square_name in dic_black[piece_type]):
+                        continue
+                    else:
+                        return False
+                else:
+                    if (square_name in dic_white[piece_type]):
+                        continue
+                    else:
+                        return False
+                    
+    return True
+                
+                
+            
+    
+    
