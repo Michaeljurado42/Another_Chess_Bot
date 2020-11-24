@@ -21,7 +21,7 @@ import numpy as np
 from stockfish import Stockfish
 from uncertainty_rnn import BoardGuesserNetOnline
 from fen_string_convert import is_knight_rush, process_sense, create_blank_emission_matrix, get_row_col_from_num, get_most_likely_truth_board, convert_one_hot_to_board, start_bookkeeping, find_piece_type, assert_bookkeeping_is_accurate, piece_type_converter
-import pdb
+
 
 # TODO: Rename this class to what you would like your bot to be named during the game.
 class AnotherChessBot(Player):
@@ -138,8 +138,6 @@ class AnotherChessBot(Player):
         if (self.knight_rush):
             self.knight_rush = is_knight_rush(sense_result, self.color)
             
-        pdb.set_trace()
-
         pass
 
     def choose_move(self, possible_moves, seconds_left):
@@ -194,7 +192,7 @@ class AnotherChessBot(Player):
         #knight rush
         # all move_counts have a +1 because move_count has already been incrementend
         # e7-e5, b8-c6, d7-d6 (or g8-f6)
-        knight_rush_moves_black = {1: chess.Move(52,36), 2: chess.Move(56,42), 3: chess.Move(51,43)}
+        knight_rush_moves_black = {1: chess.Move(52,36), 2: chess.Move(57,42), 3: chess.Move(51,43)}
         # e2-e4, f1-b5, b5-e8, c6 or d7 - e8
         knight_rush_moves_white = {1: chess.Move(12,28), 2: chess.Move(5,33), 3: chess.Move(33,60), 4: chess.Move(51,60)}
         if (self.knight_rush):
@@ -218,6 +216,10 @@ class AnotherChessBot(Player):
                             self.emission_matrix = create_blank_emission_matrix(self.white)
                             #g8-f6
                             return chess.Move(62,45)
+                        else:
+                            self.emission_matrix = create_blank_emission_matrix(self.white)
+                            return knight_rush_moves_black[self.move_count]
+                            
                     else:
                         self.emission_matrix = create_blank_emission_matrix(self.white)
                         return knight_rush_moves_black[self.move_count]
