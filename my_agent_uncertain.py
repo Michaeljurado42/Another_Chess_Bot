@@ -31,6 +31,8 @@ class AnotherChessBot(Player):
         self.color = None
         self.board = None
         self.immediate_threat = None
+        self.knight_rush_moves_black = {1: chess.Move(52,44), 2: chess.Move(62,45), 3: chess.Move(61,34), 4: chess.Move(60,62)}
+        self.knight_rush_moves_white = {1: chess.Move(12,28), 2: chess.Move(5,33), 3: chess.Move(33,60), 4: chess.Move(51,60)}
 
         self.load_weights = True
         self.knight_rush = True
@@ -104,7 +106,8 @@ class AnotherChessBot(Player):
         :example: choice = chess.A1
         """
         # e3, d4, f5
-        knight_rush_senses_black = {0: 20, 1: 27, 2: 37, 3: 25, 4: 28, 5: 30}
+        #knight_rush_senses_black = {0: 20, 1: 27, 2: 37, 3: 25, 4: 28, 5: 30, 6: 25, 7: 28, 8: 30}
+        knight_rush_senses_black = {0: 27, 1: 25, 2: 44, 3: 44}
         # whatever, b6, d7, e7
         knight_rush_senses_white = {0: 52, 1: 41, 2: 51, 3: 52}
         if (self.knight_rush):
@@ -199,50 +202,54 @@ class AnotherChessBot(Player):
         #knight rush
         # all move_counts have a +1 because move_count has already been incrementend
         # e7-e5, b8-c6, d7-d6 (or g8-f6)
-        knight_rush_moves_black = {1: chess.Move(52,36), 2: chess.Move(57,42), 3: chess.Move(51,43)}
+        #knight_rush_moves_black = {1: chess.Move(52,36), 2: chess.Move(57,42), 3: chess.Move(51,43)}
         # e2-e4, f1-b5, b5-e8, c6 or d7 - e8
-        knight_rush_moves_white = {1: chess.Move(12,28), 2: chess.Move(5,33), 3: chess.Move(33,60), 4: chess.Move(51,60)}
         if (self.knight_rush):
             if (self.color):
-                if (self.move_count in knight_rush_moves_white):
+                if (self.move_count in self.knight_rush_moves_white):
                     if (self.move_count == 4):
                         if (self.bookkeeping[2,6,3] == 0):
                             self.emission_matrix = create_blank_emission_matrix(self.white)
                             return chess.Move(42,60)
                         else:
                             self.emission_matrix = create_blank_emission_matrix(self.white)
-                            return knight_rush_moves_white[self.move_count]
+                            return self.knight_rush_moves_white[self.move_count]
                     else:
                         self.emission_matrix = create_blank_emission_matrix(self.white)
-                        return knight_rush_moves_white[self.move_count]
+                        return self.knight_rush_moves_white[self.move_count]
                 else:
                     self.emission_matrix = create_blank_emission_matrix(self.white)
                     return move
             else:
-                if (self.move_count in knight_rush_moves_black):
-                    if (self.move_count == 3):
-                        #knight in f6
-                        if (self.emission_matrix[1,0,5] == 1):
-                            self.emission_matrix = create_blank_emission_matrix(self.white)
-                            #g8-f6
-                            return chess.Move(62,45)
-                        #knight or bishop in c7
-                        elif (self.bookkeeping[11,6,2] == 0):
-                            self.emission_matrix = create_blank_emission_matrix(self.white)
-                            #d8-c7
-                            return chess.Move(59,50)
-                        
-                        else:
-                            self.emission_matrix = create_blank_emission_matrix(self.white)
-                            return knight_rush_moves_black[self.move_count]
-                            
-                    else:
+                    
+    
+                if (self.move_count in self.knight_rush_moves_black):
+                    
+                    #c7, d6, f6, 
+                    if (self.immediate_threat == 50):
                         self.emission_matrix = create_blank_emission_matrix(self.white)
-                        return knight_rush_moves_black[self.move_count]
-                elif (self.move_count == 4):
-                    if (self.bookkeeping[11,6,6] == 0):
+                        self.knight_rush_moves_black[5] = chess.Move(60,62)
+                        self.knight_rush_moves_black[4] = chess.Move(61,34)
+                        #d8-c7
+                        return chess.Move(59,50)
+                    
+                    elif (self.emission_matrix[1,5,3] == 1):
                         self.emission_matrix = create_blank_emission_matrix(self.white)
-                        return chess.Move(61,54)
+                        self.knight_rush_moves_black[5] = chess.Move(60,62)
+                        self.knight_rush_moves_black[4] = chess.Move(61,34)
+                        #c7-d6
+                        return chess.Move(50,43)
+                    
+                    elif (self.emission_matrix[1,5,5] == 1):
+                        self.emission_matrix = create_blank_emission_matrix(self.white)
+                        self.knight_rush_moves_black[5] = chess.Move(60,62)
+                        self.knight_rush_moves_black[4] = chess.Move(61,34)
+                        #d8-f6
+                        return chess.Move(59,45)
+                    
+                    self.emission_matrix = create_blank_emission_matrix(self.white)
+                    return self.knight_rush_moves_black[self.move_count]
+            
                 else:
                     self.emission_matrix = create_blank_emission_matrix(self.white)
                     return move

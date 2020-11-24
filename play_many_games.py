@@ -217,7 +217,7 @@ def play_games(inputs):
     for i in range(num_games):
         win_color, win_reason = play_local_game(players[0], players[1], player_names)
         if win_color is None:
-            draw += 1
+            draws += 1
             print("Game", i, " draw")
         elif win_color:
             white_wins += 1
