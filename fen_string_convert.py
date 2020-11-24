@@ -320,7 +320,7 @@ def get_truncated_board_short(truth_board, white = True):
         output_padded = np.zeros((36, 65))
         output_padded[18:] = output
         new_truth_board = convert_truncated_to_truth(output_padded)
-        assert_truth_board_is_accurate(new_truth_board[6:], raw_truth_board[6:])
+        #assert_truth_board_is_accurate(new_truth_board[6:], raw_truth_board[6:])
 
     else:
         convert_channel(output, raw_truth_board, 0, 0, 2)  # r
@@ -333,7 +333,7 @@ def get_truncated_board_short(truth_board, white = True):
         output_padded = np.zeros((36, 65))
         output_padded[:18] = output
         new_truth_board = convert_truncated_to_truth(output_padded)
-        assert_truth_board_is_accurate(new_truth_board[:6], raw_truth_board[:6])
+        #assert_truth_board_is_accurate(new_truth_board[:6], raw_truth_board[:6])
     return output
 
 
