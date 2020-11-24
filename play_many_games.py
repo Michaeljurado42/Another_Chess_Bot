@@ -20,6 +20,11 @@ from multiprocessing import Pool
 
 
 
+Print = None
+
+def no_op(*args):
+    return
+
 def play_local_game(white_player, black_player, player_names):
     players = [black_player, white_player]
 
@@ -43,6 +48,9 @@ def play_local_game(white_player, black_player, player_names):
 
     move_number = 1
     while not game.is_over():
+        # This game is taking too long, just exit and call it a draw
+        if move_number > 200:
+            break
         #if game.turn:
         #    output.write("##################################--WHITE's Turn [{}]\n".format(move_number))
         #    output.write("##################################--Current Board State\n")
@@ -70,7 +78,11 @@ def play_local_game(white_player, black_player, player_names):
 
         #print("==================================\n")
 
-    winner_color, winner_reason = game.get_winner()
+    if move_number > 200:
+        winner_color = None
+        winner_reason = "200 move limit reached"
+    else:
+        winner_color, winner_reason = game.get_winner()
 
     white_player.handle_game_end(winner_color, winner_reason)
     black_player.handle_game_end(winner_color, winner_reason)
@@ -218,13 +230,13 @@ def play_games(inputs):
         win_color, win_reason = play_local_game(players[0], players[1], player_names)
         if win_color is None:
             draws += 1
-            print("Game", i, " draw")
+            Print("Game", i, " draw")
         elif win_color:
             white_wins += 1
-            print("Game", i, " white")
+            Print("Game", i, " white")
         else:
             black_wins += 1
-            print("Game", i, " black")
+            Print("Game", i, " black")
 
     return (white_wins, black_wins, draws) 
 
@@ -233,17 +245,25 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Allows you to play against a bot. Useful for testing and debugging.')
     parser.add_argument('first_path', help='Path to first bot source file.')
     parser.add_argument('second_path', help='Path to second bot source file.')
-    # parser.add_argument('--color', default='random', choices=['white', 'black', 'random'],
-    #                    help='The color you want to play as.')
+    parser.add_argument('--num_agents', type=int, default=4)
+    parser.add_argument('--num_games', type=int, default=25)
+    parser.add_argument('--quiet', type=bool, default=False)
+
     args = parser.parse_args()
 
+
+    if args.quiet:
+        Print = no_op
+    else:
+        Print = print
 
     name_one, constructor_one = load_player(args.first_path)
     name_two, constructor_two = load_player(args.second_path)
 
-    agents = 4
+    agents = args.num_agents
     chunksize = 1
-    inputs= [(50, constructor_one, constructor_two)] * agents
+
+    inputs= [(args.num_games, constructor_one, constructor_two)] * agents
 
     white_wins = 0
     black_wins = 0
@@ -253,12 +273,10 @@ if __name__ == '__main__':
         results = pool.map(play_games, inputs, chunksize)
         
         for result in results:
-           print(result[0], result[1], result[2])
+           Print(result[0], result[1], result[2])
            white_wins += result[0]
            black_wins += result[1]
            draws += result[2]
 
-    print("white:", white_wins)
-    print("black:", black_wins)
-    print("draw:", draws)
+    print("white:", white_wins, "black:", black_wins, "draw:", draws)
 

@@ -97,14 +97,13 @@ play_random_game()
 fen = "K7/8/8/8/8/8/p7/RN6 b KQkq - 0 1"
 board.set_fen(fen)
 
-format_print_board(board)
+#format_print_board(board)
 
 moves = list(board.generate_legal_moves())
-for move in moves:
-    print(move)
 
 test_moves(board)
 
+print("Test pawn capture for black passed")
 
 # %%
 
@@ -112,13 +111,14 @@ test_moves(board)
 fen = "Kq6/P7/8/8/8/8/p7/R7 w KQkq - 0 1"
 board.set_fen(fen)
 
-format_print_board(board)
+#format_print_board(board)
 
 moves = list(board.generate_legal_moves())
-for move in moves:
-    print(move)
 
 test_moves(board)
+
+print("Test pawn capture for white passed")
+
 
 
 # %%
@@ -144,6 +144,8 @@ assert(move.uci() == "0000")
 assert(gameapi.board.fen() != fen)
 # ... board pieces should not have moved
 assert(gameapi.board.board_fen() == board.board_fen())
+
+print("Null move test passed")
 
 
 # %%

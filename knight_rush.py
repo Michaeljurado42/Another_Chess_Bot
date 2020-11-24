@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#/usr/bin/env python3
 
 """
 File Name:      random_agent.py
@@ -30,6 +30,10 @@ class HorseRush(Player):
         self.white_sequences = [
 #            ["G1F3", "F3H4", "H4F5", "F5G7", "G7E8"],
             ["g1f3", "f3d4", "d4f5", "f5g7", "g7e8"],
+# [g1h3, h3g5, g5e6, e6g7]
+# [g1h3, h3g5, g5e6, e6c7]
+
+
             ["b1c3", "c3b5", "b5c7", "c7e8"],
         ]
 

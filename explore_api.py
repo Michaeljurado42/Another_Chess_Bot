@@ -108,3 +108,34 @@ format_print_board(board)
 
 board.is_game_over()
 # %%
+
+
+fen1 = '1R6/P5k1/p6p/B4r2/P1pp3P/1P1P2R1/N1P3K1/8 w - - 0 74'
+
+board.set_fen(fen1)
+
+
+# %%
+format_print_board(board)
+# %%
+moves =list(board.generate_pseudo_legal_moves())
+
+for move in moves:
+    print(move.uci(), end=' ')
+
+# %%
+
+edges = set([0, 7])
+for i in range(64):
+    square = chess.Square(i)
+    if (chess.square_rank(square) not in edges) and (chess.square_file(square) not in edges):
+        print("%d %s, "%(i, chess.square_name(i)))
+
+
+# %%
+
+chess.square_file(square)
+# %%
+
+chess.square_rank(square)
+# %%

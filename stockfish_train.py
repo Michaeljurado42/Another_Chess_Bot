@@ -11,16 +11,14 @@ import sys
 import os
 import math
 import csv
+import pandas as pd
+from fen_string_convert import convert_fen_string
+
+from torch.utils.data import Dataset, DataLoader
 
 
 
 gameapi = GameAPI(chess.Board())
-
-def convert_move(move_uci):
-    move = chess.Move.from_uci(move_uci)
-    pi = gameapi.getValidMoves(moves=[move])
-    pi[-1] = 0
-    return pi
 
 
 training_examples = []
@@ -30,14 +28,7 @@ nnet = NNetWrapper()
 nnet.load_checkpoint()
 
 
-with open('training_examples/train') as csvfile:
-    data = list(csv.reader(csvfile))
-
-print(len(data))
-
-examples = [(x[0], convert_move(x[1]), int(x[2])) for x in data]
-
-loss = nnet.train(examples)
+loss = nnet.train("training_examples/train")
 
 if math.isnan(loss):
    print("Is nan, not saving net")

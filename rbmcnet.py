@@ -139,23 +139,80 @@ class RbmcNet(nn.Module):
 # https://github.com/suragnair/alpha-zero-general
 
 class NNetWrapper():
-    def __init__(self):
+    def __init__(self, id = None):
         self.cuda = hyperparams.use_gpu and torch.cuda.is_available()
         self.batch_size = hyperparams.batch_size
         self.epochs = hyperparams.epochs
         self.channels, self.board_x, self.board_y = hyperparams.input_dims
         self.action_size = hyperparams.action_size
         self.nnet = RbmcNet(hyperparams.input_dims, hyperparams.action_size)
-        self.device = "cuda:1"
+        
+        if id is None:
+            self.device = "cuda:0"
+        else:
+            self.device = "cuda:1"
 
         if self.cuda:
             self.nnet.to(self.device)
+
+
+    def train_mcts(self, training_examples):
+        """
+        examples: list of examples, each example is of form (board, pi, v)
+        """
+        optimizer = torch.optim.Adam(self.nnet.parameters())
+
+        examples = [(convert_fen_string(fen), pi, z) for (fen, pi, z) in training_examples]
+
+
+        for epoch in range(self.epochs):
+            print('EPOCH ::: ' + str(epoch + 1))
+            self.nnet.train()
+            pi_losses = AverageMeter()
+            v_losses = AverageMeter()
+
+            batch_count = int(len(examples) / self.batch_size)
+
+            t = tqdm(range(batch_count), desc='Training Net')
+            for _ in t:
+                sample_ids = np.random.randint(len(examples), size=self.batch_size)
+                boards, pis, vs = list(zip(*[examples[i] for i in sample_ids]))
+                boards = torch.FloatTensor(np.array(boards).astype(np.float64))
+                target_pis = torch.FloatTensor(np.array(pis))
+                target_vs = torch.FloatTensor(np.array(vs).astype(np.float64))
+
+                # predict
+                if self.cuda:
+                    boards, target_pis, target_vs = boards.contiguous().cuda(), target_pis.contiguous().cuda(), target_vs.contiguous().cuda()
+
+                # compute output
+                out_pi, out_v = self.nnet(boards)
+                l_pi = self.loss_pi(target_pis, out_pi)
+                l_v = self.loss_v(target_vs, out_v)
+                total_loss = l_pi + l_v
+
+                # record loss
+                pi_losses.update(l_pi.item(), boards.size(0))
+                v_losses.update(l_v.item(), boards.size(0))
+                t.set_postfix(Loss_pi=pi_losses, Loss_v=v_losses)
+
+                # compute gradient and do SGD step
+                optimizer.zero_grad()
+                total_loss.backward()
+                optimizer.step()
+                
+                # Save model
+                filename = "epoch_" + str(epoch) + ".pth.tar"
+                self.save_checkpoint(filename=filename)
+
+        return total_loss
+
 
     def train(self, training_examples):
         """
         examples: list of examples, each example is of form (board, pi, v)
         """
-        optimizer = torch.optim.Adam(self.nnet.parameters(), lr=0.001)
+        optimizer = torch.optim.Adam(self.nnet.parameters(), lr=0.01)
 
         dataset = ChessDataset("training_examples/train")
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, num_workers=8)

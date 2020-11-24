@@ -199,7 +199,9 @@ def convert_channel(output, raw_truth_board, channel_truth, channel_truncated, e
     piece_locations = np.argwhere(truthPieceChannel).flatten()
     pieces_alive = len(piece_locations)
     if pieces_alive > expected_pieces:
-        print("A promotion probably occured")
+        # Comment out for final submission
+        #print("A promotion probably occured")
+        pass
 
     for i in range(min(pieces_alive, expected_pieces)):  # fill in known pieces
         output[channel_truncated + i, piece_locations[i]] = 1
@@ -479,7 +481,9 @@ def get_most_likely_truth_board(truncated_board: torch.Tensor, emission_matrix: 
 
                 softmax[:, square_pos] = -1  # do not pick any pieces in this spot
             else:
-                print("okay")  # duplicates of emission matrix
+                # Commenting this out for final submission
+                #print("okay")  # duplicates of emission matrix
+                pass
 
 
 
