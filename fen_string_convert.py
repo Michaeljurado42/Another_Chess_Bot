@@ -124,7 +124,6 @@ def convert_fen_string_truncated(fen):
 
 def create_blank_emission_matrix(white=True):
     """
-<<<<<<< HEAD
     Purpose of this is to create a blank emission matrix. Only information that it stores is the side of the board
 
     Current emission Encodding:
@@ -458,6 +457,31 @@ def get_most_likely_truth_board(truncated_board: torch.Tensor, emission_matrix: 
                 softmax[:, max_piece_pos] = -1  # do not pick any pieces in this spot
 
     #assert np.all(convert_truncated_to_truth(max_truncated_board) == known_pieces)  # have you filled in the known pieces correctly
+
+    # know position but not type
+    if white:
+        known_squares = emission_matrix[13].flatten()
+    else:
+        known_squares = emission_matrix[12].flatten()
+    known_squares = np.append(known_squares, 0)
+
+    if np.any(known_squares): # the opponent took one of our pieces last turn
+
+        for square_pos in np.argwhere(known_squares):
+            probs = softmax[:, square_pos]
+            if np.max(probs) != -1:  # if it was a capture go here
+
+                most_likely_enemy = np.argmax(probs)
+
+                max_truncated_board[ most_likely_enemy, square_pos] = 1
+
+                softmax[most_likely_enemy, :] = -1  # cover up this row so we don't pick it again
+
+                softmax[:, square_pos] = -1  # do not pick any pieces in this spot
+            else:
+                print("okay")  # duplicates of emission matrix
+
+
 
     # loop greedily finds the most likely piece one at a time and prevents other pieces from being on that square
     while True:
