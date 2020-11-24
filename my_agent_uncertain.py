@@ -30,9 +30,11 @@ class AnotherChessBot(Player):
 
         self.color = None
         self.board = None
+        self.immediate_threat = None
 
         self.load_weights = True
         self.knight_rush = True
+
 
     def handle_game_start(self, color, board):
         """
@@ -72,7 +74,8 @@ class AnotherChessBot(Player):
         :param captured_piece: bool - true if your opponents captured your piece with their last move
         :param captured_square: chess.Square - position where your piece was captured
         """
-
+        self.immediate_threat = None
+        
         #BOOKKEEPING
         self.emission_matrix[-1, :, :] = int(self.white)
         self.emission_matrix[:12] = np.copy(self.bookkeeping)
@@ -84,6 +87,10 @@ class AnotherChessBot(Player):
             self.emission_matrix[piece_type, row, col] = 0
             self.emission_matrix[13 - int(self.white), row, col] = 0
             self.emission_matrix[12 + int(self.white), row, col] = 1
+            
+        if (self.knight_rush):
+            if captured_piece:
+                self.immediate_threat = captured_square
 
     def choose_sense(self, possible_sense, possible_moves, seconds_left):
         """
@@ -97,7 +104,7 @@ class AnotherChessBot(Player):
         :example: choice = chess.A1
         """
         # e3, d4, f5
-        knight_rush_senses_black = {0: 20, 1: 27, 2: 37}
+        knight_rush_senses_black = {0: 20, 1: 27, 2: 37, 3: 25, 4: 28, 5: 30}
         # whatever, b6, d7, e7
         knight_rush_senses_white = {0: 52, 1: 41, 2: 51, 3: 52}
         if (self.knight_rush):
@@ -208,6 +215,9 @@ class AnotherChessBot(Player):
                     else:
                         self.emission_matrix = create_blank_emission_matrix(self.white)
                         return knight_rush_moves_white[self.move_count]
+                else:
+                    self.emission_matrix = create_blank_emission_matrix(self.white)
+                    return move
             else:
                 if (self.move_count in knight_rush_moves_black):
                     if (self.move_count == 3):
@@ -216,6 +226,12 @@ class AnotherChessBot(Player):
                             self.emission_matrix = create_blank_emission_matrix(self.white)
                             #g8-f6
                             return chess.Move(62,45)
+                        #knight or bishop in c7
+                        elif (self.bookkeeping[11,6,2] == 0):
+                            self.emission_matrix = create_blank_emission_matrix(self.white)
+                            #d8-c7
+                            return chess.Move(59,50)
+                        
                         else:
                             self.emission_matrix = create_blank_emission_matrix(self.white)
                             return knight_rush_moves_black[self.move_count]
@@ -223,6 +239,14 @@ class AnotherChessBot(Player):
                     else:
                         self.emission_matrix = create_blank_emission_matrix(self.white)
                         return knight_rush_moves_black[self.move_count]
+                elif (self.move_count == 4):
+                    if (self.bookkeeping[11,6,6] == 0):
+                        self.emission_matrix = create_blank_emission_matrix(self.white)
+                        return chess.Move(61,54)
+                else:
+                    self.emission_matrix = create_blank_emission_matrix(self.white)
+                    return move
+                        
         else: 
             self.emission_matrix = create_blank_emission_matrix(self.white)  # clear it here
             return move
