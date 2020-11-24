@@ -150,11 +150,11 @@ class AnotherChessBot(Player):
         self.fen = gameapi.fen
 
         # Endgame move to capture the opponent king
-        move = gameapi.end_game_move(self.color)
-        if move is not None:
-            return move
+        #move = gameapi.end_game_move(self.color)
+        #if move is not None:
+        #    return move
 
-        mcts = MCTS(gameapi, self.nnet, num_mcts_sims=2, cpuct=1.0)
+        mcts = MCTS(gameapi, self.nnet, num_mcts_sims=2, cpuct=0.5)
 
         probs = mcts.getActionProb()
         best_move = np.argmax(probs)
@@ -352,4 +352,3 @@ def format_print_board(board):
             ind += 1
         print('\n', end='')
     print("")
-
