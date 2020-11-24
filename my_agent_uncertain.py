@@ -20,7 +20,7 @@ import chess.engine
 import numpy as np
 from stockfish import Stockfish
 from uncertainty_rnn import BoardGuesserNetOnline
-from fen_string_convert import process_sense, create_blank_emission_matrix, get_row_col_from_num, get_most_likely_truth_board, convert_one_hot_to_board, start_bookkeeping, find_piece_type, assert_bookkeeping_is_accurate
+from fen_string_convert import process_sense, create_blank_emission_matrix, get_row_col_from_num, get_most_likely_truth_board, convert_one_hot_to_board, start_bookkeeping, find_piece_type, assert_bookkeeping_is_accurate, piece_type_converter
 
 
 # TODO: Rename this class to what you would like your bot to be named during the game.
@@ -43,6 +43,7 @@ class AnotherChessBot(Player):
         """
         # TODO: implement this method
         self.board = board
+        self.fen = None
         self.color = color
         self.move_count = 0
         self.use_stockfish = False
@@ -94,7 +95,11 @@ class AnotherChessBot(Player):
         :return: chess.SQUARE -- the center of 3x3 section of the board you want to sense
         :example: choice = chess.A1
         """
-        # TODO: update this method
+        # Limit sensing to squares that are not on the edge of the board
+        #
+        #                b2, c2, d2, e2, f2, g2, b3, c3, d3, e3, f3, g3, b4, c4, d4, e4, f4, g4, b5, c5, d5, e5, f5, g5, b6, c6, d6, e6, f6, g6, b7, c7, d7, e7, f7, g7
+        possible_sense = [9, 10, 11, 12, 13, 14, 17, 18, 19, 20, 21, 22, 25, 26, 27, 28, 29, 30, 33, 34, 35, 36, 37, 38, 41, 42, 43, 44, 45, 46, 49, 50, 51, 52, 53, 54]
+
         return random.choice(possible_sense)
 
     def handle_sense_result(self, sense_result):
@@ -139,22 +144,17 @@ class AnotherChessBot(Player):
         current_board = convert_one_hot_to_board(pred_board)
         current_board.turn = self.color
         self.move_count += 1
-        # whom: Run MCTS simulation for num_simulations and then choose the best move
-        # Provide current_board (or what we believe to be the current board) to MCTS
-        # During training self.board has been modified to be the truth board
 
-        #current_board = self.board
-        print("The most likely game board")
+        # Current board is most likely truth board
         gameapi = GameAPI(current_board)
-        print(gameapi.fen)
-        gameapi.print_board()
+        self.fen = gameapi.fen
 
         # Endgame move to capture the opponent king
-        move = gameapi.end_game_move(self.color)
-        if move is not None:
-            return move
+        #move = gameapi.end_game_move(self.color)
+        #if move is not None:
+        #    return move
 
-        mcts = MCTS(gameapi, self.nnet, num_mcts_sims=2, cpuct=1.0)
+        mcts = MCTS(gameapi, self.nnet, num_mcts_sims=2, cpuct=0.5)
 
         probs = mcts.getActionProb()
         best_move = np.argmax(probs)
@@ -185,8 +185,8 @@ class AnotherChessBot(Player):
         """
         if taken_move != None:
 
-            copy_board = self.board.copy()
-            copy_board.pop()
+            copy_board = chess.Board()
+            copy_board.set_fen(self.fen)
             if copy_board.is_castling(taken_move):
 
                 if copy_board.is_kingside_castling(taken_move):
@@ -305,16 +305,16 @@ class AnotherChessBot(Player):
                         for i in range(to_row + 1, from_row):
                             self.emission_matrix[14, i, from_col] = 1  # empty squares
 
-        try:
-            assert (assert_bookkeeping_is_accurate(self.bookkeeping, self.board, self.white))
-
-        except AssertionError as inst:
-            print(type(inst))
-            # pdb.set_trace()
-
-        except TypeError as inst:
-            print(type(inst))
-            # pdb.set_trace()
+        #try:
+        #    assert (assert_bookkeeping_is_accurate(self.bookkeeping, self.board, self.white))
+        #
+        #except AssertionError as inst:
+        #    print(type(inst))
+        #    # pdb.set_trace()
+        #
+        #except TypeError as inst:
+        #    print(type(inst))
+        #    # pdb.set_trace()
 
     def handle_game_end(self, winner_color, win_reason):  # possible GameHistory object...
         """
@@ -352,4 +352,3 @@ def format_print_board(board):
             ind += 1
         print('\n', end='')
     print("")
-

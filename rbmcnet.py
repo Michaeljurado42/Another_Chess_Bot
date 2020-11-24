@@ -10,6 +10,10 @@ import os
 from tqdm import tqdm
 from fen_string_convert import convert_fen_string
 import math
+import pandas as pd
+from torch.utils.data import Dataset, DataLoader
+from gameapi import GameAPI
+import chess
 
 class ConvBlock(nn.Module):
     # Channels
@@ -142,7 +146,7 @@ class NNetWrapper():
         self.channels, self.board_x, self.board_y = hyperparams.input_dims
         self.action_size = hyperparams.action_size
         self.nnet = RbmcNet(hyperparams.input_dims, hyperparams.action_size)
-        self.device = "cuda:0"
+        self.device = "cuda:1"
 
         if self.cuda:
             self.nnet.to(self.device)
@@ -151,23 +155,24 @@ class NNetWrapper():
         """
         examples: list of examples, each example is of form (board, pi, v)
         """
-        optimizer = torch.optim.Adam(self.nnet.parameters())
+        optimizer = torch.optim.Adam(self.nnet.parameters(), lr=0.001)
 
-        examples = [(convert_fen_string(fen), pi, z) for (fen, pi, z) in training_examples]
+        dataset = ChessDataset("training_examples/train")
+        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, num_workers=8)
 
-
+        
         for epoch in range(self.epochs):
             print('EPOCH ::: ' + str(epoch + 1))
             self.nnet.train()
             pi_losses = AverageMeter()
             v_losses = AverageMeter()
 
-            batch_count = int(len(examples) / self.batch_size)
+            #batch_count = int(len(examples) / self.batch_size)
 
-            t = tqdm(range(batch_count), desc='Training Net')
-            for _ in t:
-                sample_ids = np.random.randint(len(examples), size=self.batch_size)
-                boards, pis, vs = list(zip(*[examples[i] for i in sample_ids]))
+            t = tqdm(dataloader, desc='Training Net')
+            for boards, pis, vs in t:
+                #sample_ids = np.random.randint(len(examples), size=self.batch_size)
+                #boards, pis, vs = list(zip(*[examples[i] for i in sample_ids]))
                 boards = torch.FloatTensor(np.array(boards).astype(np.float64))
                 target_pis = torch.FloatTensor(np.array(pis))
                 target_vs = torch.FloatTensor(np.array(vs).astype(np.float64))
@@ -246,6 +251,37 @@ class NNetWrapper():
 
 
 
+class ChessDataset(Dataset):
+    """ Chess moves dataset to train on """
+   
+    def __init__(self, csv_file):
+        self.examples = pd.read_csv(csv_file, header=None)
+   
+    def __len__(self):
+        return len(self.examples)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        sample = self.examples.iloc[idx]
+
+        board = convert_fen_string(sample[0])
+        pi = self.convert_move(sample[1])
+        v = sample[2]
+
+        return board, pi, v
+
+        
+    def convert_move(self, move_uci):
+        move = chess.Move.from_uci(move_uci)
+        pi = gameapi.getValidMoves(moves=[move])
+        pi[-1] = 0
+        return pi
+
+
+
+
 class AverageMeter(object):
     """From https://github.com/pytorch/examples/blob/master/imagenet/main.py"""
 
@@ -256,8 +292,7 @@ class AverageMeter(object):
         self.count = 0
 
     def __repr__(self):
-        return str(self.avg)
-        #return f'{self.avg:.2e}'
+        return "{:.2e}".format(self.avg)
 
     def update(self, val, n=1):
         self.val = val
@@ -269,3 +304,17 @@ class AverageMeter(object):
 class dotdict(dict):
     def __getattr__(self, name):
         return self[name]
+
+
+if __name__ == "__main__":
+    gameapi = GameAPI(chess.Board())
+    nnet = NNetWrapper()
+    nnet.load_checkpoint()
+
+    loss = nnet.train("training_examples/train")
+
+    if math.isnan(loss):
+        print("Is nan, not saving net")
+    else:
+        nnet.save_checkpoint(filename="final.pth.tar")
+
